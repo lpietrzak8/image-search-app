@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  backend:
+    build: ./backend
+    container_name: flask-backend
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
+    networks:
+      - app-network
+      - redis-network
+      - database-network
+    secrets:
+      - db_password
+
+  memoryStore:
+    image: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - redisNetwork
+
+  database:
+    image: mysql:8
+    container_name: mysql-database
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
+      MYSQL_DATABASE: photos_db
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - database-network
+    secrets:
+      - db_password
+
+volumes:
+  db-data:
+
+networks:
+  app-network:
+  redis-network:
+  database-network:
+
+secrets:
+  db_password:
+    file: db_password.txt

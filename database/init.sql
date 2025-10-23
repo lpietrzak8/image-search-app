@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS photos (
+    id INT NOT NULL AUTO_INCREMENT,
+    author VARCHAR(64) NOT NULL,
+    keywords VARCHAR(128) NOT NULL,
+    description VARCHAR(512) NOT NULL,
+    image BLOB NOT NULL,
+    PRIMARY KEY (id)
+);
+
