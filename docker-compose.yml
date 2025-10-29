@@ -9,7 +9,7 @@ services:
     depends_on:
       - keycloak
       - backend
-      - CLIP
+      - clip
     networks:
       - app-network
       - keycloak-network
@@ -25,7 +25,7 @@ services:
       - database-network
       - keycloak-network
     depends_on:
-      - CLIP
+      - clip
     healthcheck:
       test:
         [
@@ -47,7 +47,7 @@ services:
     ports:
       - "6379:6379"
     depends_on:
-      - CLIP
+      - clip
     networks:
       - redis-network
 
@@ -58,7 +58,7 @@ services:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
       MYSQL_DATABASE: photos_db
     depends_on:
-      - CLIP
+      - clip
     volumes:
       - db-data:/var/lib/mysql
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -75,7 +75,7 @@ services:
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: /run/secrets/kc_db_password
     depends_on:
-      - CLIP
+      - clip
     volumes:
       - /var/lib/postgresql/keycloak_data:/var/lib/postgresql/data
     networks:
@@ -100,7 +100,7 @@ services:
       - 8080:8080
     depends_on:
       - keycloak-db
-      - CLIP
+      - clip
     volumes:
       - ./keycloak-import:/opt/keycloak/data/import
     networks:
@@ -109,7 +109,7 @@ services:
       - kc_admin_password
       - kc_db_password
 
-  CLIP:
+  clip:
     build: ./clip
     container_name: clip
     networks:
