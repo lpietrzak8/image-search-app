@@ -1,4 +1,4 @@
-db_password.txt
+secrets/
 .DS_Store
 
 # Byte-compiled / optimized / DLL files
