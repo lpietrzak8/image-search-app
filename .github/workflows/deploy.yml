@@ -12,12 +12,15 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
+        
       - name: Add server to known hosts
+        shell: bash
         run: |
           mkdir -p ~/.ssh
-          touch ~/.ssh/known-hosts
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known-hosts
+          echo "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+        env:
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
 
       - name: SSH into server and pull latest
         uses: appleboy/ssh-action@v1.2.0
