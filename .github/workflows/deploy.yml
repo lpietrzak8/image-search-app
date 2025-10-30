@@ -17,15 +17,15 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           touch ~/.ssh/known-hosts
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known-hosts
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known-hosts
 
       - name: SSH into server and pull latest
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT }}
+          port: ${{ secrets.VPS_PORT }}
           script: |
             cd ${{ secrets.WORK_DIR }}
             git pull origin main
