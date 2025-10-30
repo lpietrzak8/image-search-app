@@ -13,8 +13,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Add VPS to known-hosts
-        run: ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known-hosts
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          touch ~/.ssh/known-hosts
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known-hosts
 
       - name: SSH into server and pull latest
         uses: appleboy/ssh-action@v1.2.0
