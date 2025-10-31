@@ -26,6 +26,8 @@ services:
       - keycloak-network
     depends_on:
       - clip
+    volumes:
+      - shared_images:/app/uploads
     healthcheck:
       test:
         [
@@ -112,12 +114,15 @@ services:
   clip:
     build: ./clip
     container_name: clip
+    volumes:
+      - shared_images:/data/images
     networks:
       - app-network
 
 volumes:
   db-data:
   keycloak-db-data:
+  shared_images:
 
 networks:
   app-network:
