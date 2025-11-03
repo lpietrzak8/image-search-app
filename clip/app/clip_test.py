@@ -3,13 +3,19 @@ import os
 from io import BytesIO
 from transformers import CLIPProcessor, CLIPModel
 import torch
+import math
 from PIL import Image
 from key_words import getKeyWords
 
 model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32", use_fast=True)
 
-text = "big black dog looking at the camera"
+text = "Huge snowy mountains"
+
+def batch(iterable, n=1):
+    l = len(iterable)
+    for ndx in range(0, l, n):
+        yield iterable[ndx:min(ndx + n, l)]
 
 def get_images(folder_path):
     images = []
@@ -23,9 +29,26 @@ def get_images(folder_path):
     return images, names
 
 
-def getImagesSimilarity(text, model, processor):
+def getImagesRankedBatches(text, model, processor):
     key_words = getKeyWords(text)
     images, names = get_images("resources")
+
+    ranked = []
+    batch_size = 100
+    x = math.ceil(len(images) / batch_size)
+
+    for i in batch(images, batch_size):
+        ranked += getImagesSimilarity(i, key_words, model, processor)
+    return images, names, ranked
+
+def getImagesRanked(text, model, processor):
+    key_words = getKeyWords(text)
+    images, names = get_images("resources")
+    return images, names, getImagesSimilarity(images, key_words, model, processor)
+
+
+def getImagesSimilarity(images, key_words, model, processor):
+    
     inputs = processor(text=key_words, images=images, return_tensors="pt", padding=True)
 
     outputs = model(**inputs)
@@ -34,13 +57,13 @@ def getImagesSimilarity(text, model, processor):
     for idx in range(len(key_words)):
         combined += logits_per_image[:, idx]
     
-    return images, names, torch.argsort(combined, descending=True)
+    return torch.argsort(combined, descending=True)
 
 
 
-images, names, ranked = getImagesSimilarity(text, model, processor)
+images, names, ranked = getImagesRankedBatches(text, model, processor)
 
-for rank, idx in enumerate(ranked):
+for rank, idx in enumerate(ranked[:100]):
     print(f"{rank+1}. Image {names[idx]}")
     
 # print("Label probabilities:", probs)
