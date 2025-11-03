@@ -4,6 +4,12 @@ from io import BytesIO
 from transformers import CLIPProcessor, CLIPModel
 import torch
 from PIL import Image
+from key_words import getKeyWords
+
+model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32", use_fast=True)
+
+text = "big black dog looking at the camera"
 
 def get_images(folder_path):
     images = []
@@ -16,21 +22,25 @@ def get_images(folder_path):
             names.append(filename)
     return images, names
 
-model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+
+def getImagesSimilarity(text, model, processor):
+    key_words = getKeyWords(text)
+    images, names = get_images("resources")
+    inputs = processor(text=key_words, images=images, return_tensors="pt", padding=True)
+
+    outputs = model(**inputs)
+    logits_per_image = outputs.logits_per_image
+    combined = 0
+    for idx in range(len(key_words)):
+        combined += logits_per_image[:, idx]
+    
+    return images, names, torch.argsort(combined, descending=True)
 
 
-images, names = get_images("../resources")
-inputs = processor(text=["dog", "black"], images=images, return_tensors="pt", padding=True)
 
-outputs = model(**inputs)
-logits_per_image = outputs.logits_per_image
-probs = logits_per_image
-combined = 0.8*probs[:, 0] + 0.2*probs[:, 1]
-
-ranked = torch.argsort(combined, descending=True)
+images, names, ranked = getImagesSimilarity(text, model, processor)
 
 for rank, idx in enumerate(ranked):
-    print(f"{rank+1}. Image {names[idx]} Score: {combined[idx]:.3f}")
+    print(f"{rank+1}. Image {names[idx]}")
     
 # print("Label probabilities:", probs)
