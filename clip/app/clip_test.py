@@ -5,7 +5,7 @@ from transformers import CLIPProcessor, CLIPModel
 import torch
 import math
 from PIL import Image
-from key_words import getKeyWords
+from backend.app.key_words import getKeyWords
 
 model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32", use_fast=True)

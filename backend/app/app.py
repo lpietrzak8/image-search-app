@@ -4,6 +4,9 @@ from flask_cors import CORS
 from flask_healthz import healthz, HealthError
 from werkzeug.utils import secure_filename
 from db_connector import db, Post, Keyword
+from config import get_secret
+from searcher import Searcher
+from key_words import getKeyWords
 
 MAX_SEARCH = 30
 UPLOAD_FOLDER = "uploads"
@@ -43,26 +46,24 @@ app.config.update(
     }
 )
 
-db_password_file = os.getenv('MYSQL_ROOT_PASSWORD_FILE')
-
-with open(db_password_file, 'r') as pw_file:
-    db_password = pw_file.readline()
+db_password = get_secret('MYSQL_ROOT_PASSWORD')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://root:{db_password}@db:3306/photos_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+searcher = Searcher()
 
-# @app.route("/search", methods=['GET'])
-# def get_images():
-#     tag = request.args.get("t").lower()
-#     query = request.args.get("s_query").lower()
-#     top_k = request.args.get("k")
+@app.route("/search", methods=['GET'])
+def get_images():
+    query = request.args.get("s_query").lower()
+    tag = getKeyWords(query)[0] # pozniej mozna dodac sprawdzanie dla kazdego znalezionego keyworda
+    top_k = request.args.get("k")
 
-#     (top_urls, top_scores) = searcher.get_similar_images(
-#         tag, query, MAX_SEARCH, int(top_k)
-#     )
-
-#     return jsonify({"top_urls": top_urls, "top_scores": top_scores})
+    (top_urls, top_scores) = searcher.get_similar_images(
+        tag, query, MAX_SEARCH, int(top_k)
+    )
+    # TODO dodac szukanie w przeslanych obrazach
+    return jsonify({"top_urls": top_urls, "top_scores": top_scores})
 
 @app.route('/api/createPost', methods=['POST'])
 def post_image():

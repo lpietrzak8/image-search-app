@@ -1,14 +1,14 @@
 from io import BytesIO
 from PIL import Image
+from config import get_secret
 import requests
 import logging
 import time
 import os
 
 ORIGINAL_API = "https://pixabay.com/api/?key="
-API_KEY_FILE = os.getenv('PIXABAY_API_KEY_FILE')
-with open(API_KEY_FILE, 'r') as akf:
-    API_KEY = akf.readline()
+
+API_KEY = get_secret('PIXABAY_API_KEY')
 
 PIXABAY_API = ORIGINAL_API + API_KEY
 

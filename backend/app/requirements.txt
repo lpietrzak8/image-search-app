@@ -34,3 +34,5 @@ flask-healthz==1.0.1
 flask-cors==6.0.1
 SQLAlchemy==2.0.44
 Flask-SQLAlchemy==3.1.1
+direct-redis==0.3.1
+rake-nltk==1.0.6
