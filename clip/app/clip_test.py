@@ -5,7 +5,7 @@ from transformers import CLIPProcessor, CLIPModel
 import torch
 import math
 from PIL import Image
-from backend.app.key_words import getKeyWords
+
 
 import time
 import pickle

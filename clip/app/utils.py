@@ -1,4 +1,5 @@
 import os
+from PIL import Image
 
 def batch(iterable, n=1):
     l = len(iterable)
