@@ -19,6 +19,7 @@ services:
     container_name: flask-backend
     environment:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
+      PIXABAY_API_KEY_FILE: /run/secrets/pixabay_api_key
     networks:
       - app-network
       - redis-network
@@ -42,6 +43,7 @@ services:
       start_period: 30s
     secrets:
       - db_password
+      - pixabay_api_key
 
   memoryStore:
     image: redis
@@ -137,3 +139,5 @@ secrets:
     file: ./secrets/kc_db_password.txt
   kc_admin_password:
     file: ./secrets/kc_admin_password.txt
+  pixabay_api_key:
+    file: ./secrets/pixabay_api_key.txt
