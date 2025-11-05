@@ -2,10 +2,9 @@ import os
 import requests
 from search_utils import fetch_images_tag
 from direct_redis import DirectRedis
-from config import get_secret
 
-redis = get_secret("REDIS_IN_USE")
-redis_host = get_secret("REDISHOST")
+redis = os.getenv("REDIS_IN_USE", "false")
+redis_host = "redis"
 redis_port = 6379
 redis_client = DirectRedis(host=redis_host, port=redis_port)
 
@@ -20,7 +19,7 @@ class Searcher:
             urls_redis_key = keyword + "_urls"
 
             if redis_client.exists(images_redis_key) and redis_client.exists(urls_redis_key):
-                keyword_images = redis.cient.get(images_redis_key)
+                keyword_images = redis_client.get(images_redis_key)
                 keyword_image_urls = redis_client.get(urls_redis_key)
             else:
                 (keyword_images, keyword_image_urls) = fetch_images_tag(

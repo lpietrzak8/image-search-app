@@ -1,15 +1,15 @@
 import os
-from flask import Flask, request, jsonify, g, send_from_directory, url_for
+from flask import Flask, request, jsonify, g, send_from_directory
 from flask_cors import CORS
 from flask_healthz import healthz, HealthError
+import json
 from werkzeug.utils import secure_filename
 from db_connector import db, Post, Keyword
-from config import get_secret
+from config import get_secret, build_posts_array, UPLOAD_FOLDER
 from searcher import Searcher
 from key_words import getKeyWords
 
 MAX_SEARCH = 30
-UPLOAD_FOLDER = "uploads"
 
 app = Flask(__name__)
 app.register_blueprint(healthz, url_prefix="/")
@@ -22,7 +22,6 @@ cors = CORS(
     }
 )
 
-# db.create_all()
 
 def printok():
     print("Everything is ok")
@@ -46,14 +45,21 @@ app.config.update(
     }
 )
 
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
 db_password = get_secret('MYSQL_ROOT_PASSWORD')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://root:{db_password}@db:3306/photos_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://root:{db_password}@database:3306/photos_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
 
 searcher = Searcher()
 
-@app.route("/search", methods=['GET'])
+@app.route("/api/search", methods=['GET'])
 def get_images():
     query = request.args.get("s_query").lower()
     tag = getKeyWords(query)[0] # pozniej mozna dodac sprawdzanie dla kazdego znalezionego keyworda
@@ -62,54 +68,54 @@ def get_images():
     (top_urls, top_scores) = searcher.get_similar_images(
         tag, query, MAX_SEARCH, int(top_k)
     )
-    # TODO dodac szukanie w przeslanych obrazach
     return jsonify({"top_urls": top_urls, "top_scores": top_scores})
 
 @app.route('/api/createPost', methods=['POST'])
 def post_image():
-    data = request.get_json()
-    
+    author = request.form.get("author")
+    description = request.form.get("description")
+    keywords_raw = request.form.get("keywords")
     image = request.files.get("image")
 
     if not image:
         return jsonify({"error": "No image uploaded"}), 400
+    if not author:
+        return jsonify({"error": "Missing author"}), 400
+    if not description:
+        return jsonify({"error": "Missing description"}), 400
+    
+    try:
+        keywords_list = json.loads(keywords_raw)
+    except Exception:
+        keywords_list = [kw.strip() for kw in keywords_raw.split(",")]
 
-    folder = os.path.join(UPLOAD_FOLDER, data["author"])
+    folder = os.path.join(UPLOAD_FOLDER, author)
     os.makedirs(folder, exist_ok=True)
 
     filename = secure_filename(image.filename)
     filepath = os.path.join(folder, filename)
     image.save(filepath)
 
+    relative_path = os.path.relpath(filepath, UPLOAD_FOLDER)
+
     keyword_objects = []
-    for kw in data["keywords"]:
+    for kw in keywords_list:
         keyword = Keyword.query.filter_by(name=kw).first()
         if not keyword:
             keyword = Keyword(name=kw)
         keyword_objects.append(keyword)
 
     new_post = Post(
-        author=data["author"],
-        description=data["description"],
+        author=author,
+        description=description,
         keywords=keyword_objects,
-        image_path=filepath,
+        image_path=relative_path,
     )
     db.session.add(new_post)
     db.session.commit()
 
     return jsonify({"message": "Post created"}), 201
 
-def build_posts_array(posts):
-    results = []
-    for post in posts:
-        results.append({
-            "id": post.id,
-            "author": post.author,
-            "description": post.description,
-            "keywords": [kw.name for kw in post.keywords],
-            "image_url": url_for("serve_image", filename=post.image_path, _external=True)
-        })
-    return results
 
 @app.route('/api/posts', methods=["GET"])
 def get_posts():
@@ -127,8 +133,11 @@ def get_posts_by_keywords(keyword_name):
     return jsonify(build_posts_array(posts)), 200
 
 
-@app.route('/api/<path:filename>')
+@app.route('/api/uploads/<path:filename>')
 def serve_image(filename):
+    safe_path = os.path.join(UPLOAD_FOLDER, filename)
+    if not os.path.exists(safe_path):
+        return jsonify({"error": f"Image '{filename}' not found"}), 404
     return send_from_directory(UPLOAD_FOLDER, filename)
 
 @app.route('/health', methods=['GET'])

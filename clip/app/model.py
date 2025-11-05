@@ -2,7 +2,6 @@ import os
 from transformers import CLIPProcessor, CLIPModel
 import torch
 from PIL import Image
-from backend.app.key_words import getKeyWords
 import time
 import pickle
 
