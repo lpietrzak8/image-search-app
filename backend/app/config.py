@@ -3,6 +3,7 @@ from flask import url_for
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+CLIP_MOUNT_PATH = "/data/images"
 
 def get_secret(name):
     file_var = os.getenv(f"{name}_FILE")

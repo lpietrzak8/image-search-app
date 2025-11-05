@@ -1,6 +1,6 @@
 from io import BytesIO
 from PIL import Image
-from config import get_secret, UPLOAD_FOLDER
+from config import get_secret, UPLOAD_FOLDER, CLIP_MOUNT_PATH
 import requests
 import logging
 from db_connector import Keyword
@@ -42,7 +42,8 @@ def fetch_images_tag(search_keyword, num_images):
             local_filename = f"{search_keyword}_{os.path.basename(image_url).split('?')[0]}"
             local_path = os.path.join(pixabay_folder, local_filename)
             image.save(local_path)
-            all_image_paths.append(local_path)
+            clip_path = local_path.replace(UPLOAD_FOLDER, "/data/images", 1)
+            all_image_paths.append(clip_path)
             all_image_urls.append(image_url)
         except Exception as e:
             logging.warning(f"Failed to fetch {image_url}: {e}")
@@ -58,7 +59,8 @@ def fetch_images_tag(search_keyword, num_images):
             for post in keyword.posts:
                 local_path = os.path.join(UPLOAD_FOLDER, post.image_path)
                 if os.path.exists(local_path):
-                    all_image_paths.append(local_path)
+                    clip_path = local_path.replace(UPLOAD_FOLDER, CLIP_MOUNT_PATH, 1)
+                    all_image_paths.append(clip_path)
                     image_url = url_for("serve_image", filename=post.image_path, _external=True)
                     all_image_urls.append(image_url)
                     db_images += 1

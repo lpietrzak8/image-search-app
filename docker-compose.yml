@@ -1,18 +1,18 @@
 version: "3.8"
 
 services:
-  # frontend:
-  #   build: ./frontend
-  #   container_name: frontend
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - keycloak
-  #     - backend
-  #     - clip
-  #   networks:
-  #     - app-network
-  #     - keycloak-network
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - keycloak
+      - backend
+      - clip
+    networks:
+      - app-network
+      - keycloak-network
 
   backend:
     build: ./backend
@@ -139,7 +139,7 @@ networks:
   redis-network:
     driver: bridge
   database-network:
-    deriver: bridge
+    driver: bridge
   keycloak-network:
     driver: bridge
 
