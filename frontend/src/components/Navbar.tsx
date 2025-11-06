@@ -1,20 +1,15 @@
-import React from 'react';
+import { NavLink } from 'react-router-dom';
 import './Navbar.css';
 
-interface NavbarProps {
-  activePage: string;
-  setActivePage: (page: string) => void;
-}
-
-const Navbar: React.FC<NavbarProps> = ({ activePage, setActivePage }) => {
+const Navbar = () => {
   return (
     <header className="header">
       <div className="logo">PHOTO-SEARCH</div>
       <nav>
         <ul>
-          <li><a href="#" className={activePage === 'Home' ? 'active' : ''} onClick={() => setActivePage('Home')}>Home</a></li>
-          <li><a href="#" className={activePage === 'Log-In' ? 'active' : ''} onClick={() => setActivePage('Log-In')}>Log-In</a></li>
-          <li><a href="#" className={activePage === 'Our mission' ? 'active' : ''} onClick={() => setActivePage('Our mission')}>Our mission</a></li>
+          <li><NavLink to="/">Home</NavLink></li>
+          <li><NavLink to="/login">Log-In</NavLink></li>
+          <li><NavLink to="/mission">Our mission</NavLink></li>
         </ul>
       </nav>
     </header>
