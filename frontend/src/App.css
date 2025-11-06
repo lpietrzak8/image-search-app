@@ -1,0 +1,76 @@
+body {
+  background-color: #ffffff;
+  margin: 0;
+  font-family: "Times New Roman", Times, serif;
+}
+
+.App {
+  text-align: center;
+}
+
+.main-content {
+  background-color: #5b82a6;
+  color: black;
+  padding: 100px 20px;
+  min-height: 40vh;
+}
+
+.search-container h1 {
+  font-size: 2.4em;
+  margin-bottom: 40px;
+}
+
+.search-bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.search-input {
+  width: 70%;
+  height: 180px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: white;
+  font-family: inherit;
+  font-size: 1.5em;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border: 3px solid #5b82a6;
+  font-size: 1.7em;
+}
+
+.search-button {
+  padding: 30px 45px;
+  font-size: 1.6em;
+  background-color: #a8c4ec;
+  color: black;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 50px;
+  font-family: inherit;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.search-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.results-section {
+  padding: 50px 20px;
+  min-height: 100vh;
+}
+
+.results-section h2 {
+  font-size: 3em;
+  color: #5b82a6;
+  font-family: "Comic Sans MS", cursive, sans-serif; /* Styl inspirowany odręcznym pismem */
+}
