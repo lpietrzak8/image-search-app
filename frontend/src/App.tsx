@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import HomePage from "./pages/HomePage";
 import MissionPage from "./pages/MissionPage";
 import LogInPage from "./pages/LoginPage";
-import MyAccountPage from './pages/MyAccountPage';
+import MyAccountPage from "./pages/MyAccountPage";
 import "./App.css";
 
 function App() {
@@ -15,9 +15,15 @@ function App() {
       <Navbar isLoggedIn={isLoggedIn} />
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LogInPage setIsLoggedIn={setIsLoggedIn} />} />
+        <Route
+          path="/login"
+          element={<LogInPage setIsLoggedIn={setIsLoggedIn} />}
+        />
         <Route path="/mission" element={<MissionPage />} />
-        <Route path="/my-account" element={<MyAccountPage setIsLoggedIn={setIsLoggedIn} />} />
+        <Route
+          path="/my-account"
+          element={<MyAccountPage setIsLoggedIn={setIsLoggedIn} />}
+        />
       </Routes>
     </div>
   );
