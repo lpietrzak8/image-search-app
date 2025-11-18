@@ -1,18 +1,18 @@
 version: "3.8"
 
 services:
-  frontend:
-    build: ./frontend
-    container_name: frontend
-    ports:
-      - "3000:3000"
-    depends_on:
-      - keycloak
-      - backend
-      - clip
-    networks:
-      - app-network
-      - keycloak-network
+  # frontend:
+  #   build: ./frontend
+  #   container_name: frontend
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - keycloak
+  #     - backend
+  #     - clip
+  #   networks:
+  #     - app-network
+  #     - keycloak-network
 
   backend:
     build: ./backend
@@ -125,6 +125,8 @@ services:
       - 4000:4000
     volumes:
       - shared_images:/data/images
+      - clip-cache:/app/cache
+      - ./clip:/app
     networks:
       - app-network
 
@@ -132,6 +134,7 @@ volumes:
   db-data:
   keycloak-db-data:
   shared_images:
+  clip-cache:
 
 networks:
   app-network:
