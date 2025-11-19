@@ -1,21 +1,21 @@
 version: "3.8"
 
 services:
-  # frontend:
-  #   build: ./frontend
-  #   container_name: frontend
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - keycloak
-  #     - backend
-  #     - clip
-  #   networks:
-  #     - app-network
-  #     - keycloak-network
+  frontend:
+    image: ffrycz/image_search_app-frontend:1.0
+    container_name: frontend
+    ports:
+      - 5173:5173
+    depends_on:
+      # - keycloak
+      - backend
+      - clip
+    networks:
+      - app-network
+      - keycloak-network
 
   backend:
-    build: ./backend
+    image: ffrycz/image_search_app-backend:latest
     container_name: flask-backend
     environment:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
@@ -119,7 +119,7 @@ services:
   #     - kc_db_password
 
   clip:
-    build: ./clip
+    image: ffrycz/image_search_app-clip:1.0
     container_name: clip
     ports:
       - 4000:4000
