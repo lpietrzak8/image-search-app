@@ -126,7 +126,8 @@ services:
     volumes:
       - shared_images:/data/images
       - clip-cache:/app/cache
-      - ./clip:/app
+      # - ./clip:/app
+      - ./clip/app:/app
     networks:
       - app-network
 

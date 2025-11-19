@@ -12,11 +12,12 @@ import logging
 from ranking import rank_images
 from cache import get_or_create_embedding
 from db_connector import init_db
+import time
 
 
 os.makedirs("/app/cache", exist_ok=True)
 init_db()
-print("Embedding cache initialized.")
+print("Embedding cache initialized..")
 
 app = FastAPI()
 
@@ -62,8 +63,9 @@ async def compute_similarity(req: SimilarityRequest):
         images = [load_image(img) for img in req.images]
 
         text_emb = clip_model.compute_text_embedding(req.query)
-        
+        # start = time.time()
         img_embs = torch.cat([get_or_create_embedding(img, clip_model) for img in images])
+        # print("Cache hit:", time.time() - start)
         
         img_embs = img_embs / img_embs.norm(dim=-1, keepdim=True)
         text_emb = text_emb / text_emb.norm()
