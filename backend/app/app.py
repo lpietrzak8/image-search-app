@@ -62,13 +62,29 @@ searcher = Searcher()
 @app.route("/api/search", methods=['GET'])
 def get_images():
     query = request.args.get("s_query").lower()
-    tag = getKeyWords(query)[0] # pozniej mozna dodac sprawdzanie dla kazdego znalezionego keyworda
-    top_k = request.args.get("k")
+    keywords = getKeyWords(query)
+    top_k = int(request.args.get("k"))
 
-    (top_urls, top_scores) = searcher.get_similar_images(
-        tag, query, MAX_SEARCH, int(top_k)
-    )
-    return jsonify({"top_urls": top_urls, "top_scores": top_scores})
+    if not keywords:
+        return jsonify({"error_message": f"No results for '{query}'."}), 404
+    
+    all_results = []
+
+    for tag in keywords:
+        
+        top_images, top_scores = searcher.get_similar_images(
+            tag, query, MAX_SEARCH, top_k
+        )
+
+        for image, score in zip(top_images, top_scores):
+            all_results.append((image, score))
+    
+    all_results.sort(key = lambda x: x[1], reverse=True)
+
+    final_results = all_results[:top_k]
+
+    final_images = [item[0] for item in final_results]
+    return jsonify({"top_images": final_images})
 
 @app.route('/api/createPost', methods=['POST'])
 def post_image():

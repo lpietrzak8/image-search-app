@@ -15,7 +15,7 @@ services:
       - keycloak-network
 
   backend:
-    image: ffrycz/image_search_app-backend:latest
+    image: ffrycz/image_search_app-backend:1.1
     container_name: flask-backend
     environment:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password

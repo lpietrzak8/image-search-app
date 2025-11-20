@@ -30,21 +30,28 @@ def fetch_images_tag(search_keyword, num_images):
     output = response.json()
 
     all_image_paths = []
-    all_image_urls = []
+    all_images = []
     pixabay_folder = os.path.join(UPLOAD_FOLDER, "pixabay")
     os.makedirs(pixabay_folder, exist_ok=True)
 
     for each in output.get("hits", []):
         image_url = each.get("webformatURL")
+        author = each.get("user")
         try:
             response = requests.get(image_url)
             image = Image.open(BytesIO(response.content)).convert("RGB")
             local_filename = f"{search_keyword}_{os.path.basename(image_url).split('?')[0]}"
             local_path = os.path.join(pixabay_folder, local_filename)
             image.save(local_path)
+            
             clip_path = local_path.replace(UPLOAD_FOLDER, "/data/images", 1)
+            local_url = url_for("serve_image", filename=f"pixabay/{local_filename}", _external=True)
+            source_url = each.get("pageURL")
             all_image_paths.append(clip_path)
-            all_image_urls.append(image_url)
+            all_images.append({
+                "author": author,
+                "image_path": local_url,
+                "source_url": source_url})
         except Exception as e:
             logging.warning(f"Failed to fetch {image_url}: {e}")
     
@@ -62,11 +69,11 @@ def fetch_images_tag(search_keyword, num_images):
                     clip_path = local_path.replace(UPLOAD_FOLDER, CLIP_MOUNT_PATH, 1)
                     all_image_paths.append(clip_path)
                     image_url = url_for("serve_image", filename=post.image_path, _external=True)
-                    all_image_urls.append(image_url)
+                    all_images.append({"author":post.author, "image_path": image_url, "source_url": image_url})
                     db_images += 1
 
             logging.info(f"Fetched {db_images} images for keyword '{search_keyword}'.")
         else:
             logging.info(f"No local images found for keyword '{search_keyword}'.")
 
-    return (all_image_paths, all_image_urls)
+    return (all_image_paths, all_images)
