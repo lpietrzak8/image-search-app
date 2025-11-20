@@ -20,16 +20,16 @@ jobs:
           echo ${{ secrets.PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Build and Publish Backend
         run: |
-          docker build -t ${{env.REGISTRY}}/${{ env.OWNER }}/image-search-backend:latest ./backend
-          docker push ${{env.REGISTRY}}/${{ env.OWNER }}/image-search-backend:latest
+          docker build --platform linux/amd64,linux/arm64 -t ${{env.REGISTRY}}/${{ env.OWNER }}/image_search_app-backend:latest ./backend
+          docker push ${{env.REGISTRY}}/${{ env.OWNER }}/image_search_app-backend:latest
       - name: Build and Publish Frontend
         run: |
-          docker build -t ${{env.REGISTRY}}/${{ env.OWNER }}/image-search-frontend:latest ./frontend
-          docker push ${{env.REGISTRY}}/${{ env.OWNER }}/image-search-frontend:latest
+          docker build --platform linux/amd64,linux/arm64 -t ${{env.REGISTRY}}/${{ env.OWNER }}/image_search_app-frontend:latest ./frontend
+          docker push ${{env.REGISTRY}}/${{ env.OWNER }}/image_search_app-frontend:latest
       - name: Build and Publish CLIP Model Server
         run: |
-          docker build -t ${{env.REGISTRY}}/${{ env.OWNER }}/image-search-clip ./clip
-          docker push ${{env.REGISTRY}}/${{ env.OWNER }}/image-search-clip:latest
+          docker build --platform linux/amd64,linux/arm64 -t ${{env.REGISTRY}}/${{ env.OWNER }}/image_search_app-clip ./clip
+          docker push ${{env.REGISTRY}}/${{ env.OWNER }}/image_search_app-clip:latest
   deploy:
     runs-on: ubuntu-latest
 
@@ -55,8 +55,9 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script: |
             cd ${{ secrets.WORK_DIR }}
-            git pull origin main
+            docker compose pull
+            docker compose up -d
+            exit
 
-# docker compose pull
-# docker compose up -d
-# exit
+# git pull origin main
+
