@@ -4,15 +4,39 @@ on:
   push:
     branches:
       - main
+env:
+  REGISTRY: ghcr.io
+  OWNER: ${{ github.repository_owner }}
 
 jobs:
+  publish:
+    name: publish image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Login
+        run: |
+          echo ${{ secrets.PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Build and Publish Backend
+        run: |
+          docker build -t ${{env.REGISTRY}}/${{ env.OWNER }}/image-search-backend:latest ./backend
+          docker push ${{env.REGISTRY}}/${{ env.OWNER }}/image-search-backend:latest
+      - name: Build and Publish Frontend
+        run: |
+          docker build -t ${{env.REGISTRY}}/${{ env.OWNER }}/image-search-frontend:latest ./frontend
+          docker push ${{env.REGISTRY}}/${{ env.OWNER }}/image-search-frontend:latest
+      - name: Build and Publish CLIP Model Server
+        run: |
+          docker build -t ${{env.REGISTRY}}/${{ env.OWNER }}/image-search-clip ./clip
+          docker push ${{env.REGISTRY}}/${{ env.OWNER }}/image-search-clip:latest
   deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        
+
       - name: Add server to known hosts
         shell: bash
         run: |
@@ -32,3 +56,7 @@ jobs:
           script: |
             cd ${{ secrets.WORK_DIR }}
             git pull origin main
+
+# docker compose pull
+# docker compose up -d
+# exit
