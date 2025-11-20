@@ -5,14 +5,12 @@ services:
     image: ffrycz/image_search_app-frontend:1.0
     container_name: frontend
     ports:
-      - 5173:5173
+      - "3000:80"
     depends_on:
-      # - keycloak
       - backend
       - clip
     networks:
       - app-network
-      - keycloak-network
 
   backend:
     image: ffrycz/image_search_app-backend:1.1
@@ -23,12 +21,11 @@ services:
       MODEL_HOST: clip
       MODEL_PORT: 4000
     ports:
-      - 5000:5000
+      - 5001:5000
     networks:
       - app-network
       - redis-network
       - database-network
-      - keycloak-network
     depends_on:
       - clip
       - database
@@ -133,7 +130,6 @@ services:
 
 volumes:
   db-data:
-  keycloak-db-data:
   shared_images:
   clip-cache:
 
@@ -144,15 +140,9 @@ networks:
     driver: bridge
   database-network:
     driver: bridge
-  keycloak-network:
-    driver: bridge
 
 secrets:
   db_password:
     file: ./secrets/db_password.txt
-  kc_db_password:
-    file: ./secrets/kc_db_password.txt
-  kc_admin_password:
-    file: ./secrets/kc_admin_password.txt
   pixabay_api_key:
     file: ./secrets/pixabay_api_key.txt

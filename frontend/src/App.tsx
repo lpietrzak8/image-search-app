@@ -1,31 +1,30 @@
-import { useState, useRef, useEffect } from 'react';
-import Navbar from './components/Navbar';
-import './App.css';
+import { useState } from "react";
+import { Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import HomePage from "./pages/HomePage";
+import MissionPage from "./pages/MissionPage";
+import LogInPage from "./pages/LoginPage";
+import MyAccountPage from "./pages/MyAccountPage";
+import "./App.css";
 
 function App() {
-  const [activePage, setActivePage] = useState('Home');
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const resultsRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   return (
     <div className="App">
-      <Navbar activePage={activePage} setActivePage={setActivePage} />
-      <main className="main-content">
-        <div className="search-container">
-          <h1>Simply describe what you're looking for and search for your perfect photo</h1>
-          <div className="search-bar-wrapper">
-            <textarea ref={inputRef} className="search-input" placeholder="" />
-            <button className="search-button" onClick={() => resultsRef.current?.scrollIntoView({ behavior: 'smooth' })}>Search for a photo</button>
-          </div>
-        </div>
-      </main>
-      <section ref={resultsRef} className="results-section">
-        <h2>results:</h2>
-      </section>
+      <Navbar isLoggedIn={isLoggedIn} />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route
+          path="/login"
+          element={<LogInPage setIsLoggedIn={setIsLoggedIn} />}
+        />
+        <Route path="/mission" element={<MissionPage />} />
+        <Route
+          path="/my-account"
+          element={<MyAccountPage setIsLoggedIn={setIsLoggedIn} />}
+        />
+      </Routes>
     </div>
   );
 }
