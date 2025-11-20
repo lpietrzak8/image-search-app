@@ -28,7 +28,7 @@ class Searcher:
                 redis_client.set(images_redis_key, keyword_images)
                 redis_client.set(urls_redis_key, keyword_image_urls)
         else:
-            (keyword_images, keyword_image_urls) = fetch_images_tag(keyword, pixabay_max)
+            (keyword_images, keyword_image_objects) = fetch_images_tag(keyword, pixabay_max)
         
         response = requests.post(
             f"http://{model_host}:{model_port}/similarity",
@@ -40,6 +40,9 @@ class Searcher:
         )
         response.raise_for_status()
         result = response.json()
+
+        indices = result["indices"]
+        scores = result["scores"]
         
-        top_urls = [keyword_image_urls[i] for i in result["indices"]]
-        return (top_urls, result["scores"])
+        top_imgs = [keyword_image_objects[i] for i in indices]
+        return (top_imgs, scores)
