@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   frontend:
-    image: ffrycz/image_search_app-frontend:1.0
+    image: ffrycz/image_search_app-frontend:latest
     container_name: frontend
     ports:
       - "3000:80"
@@ -13,7 +13,7 @@ services:
       - app-network
 
   backend:
-    image: ffrycz/image_search_app-backend:1.1
+    image: ffrycz/image_search_app-backend:latest
     container_name: flask-backend
     environment:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
@@ -116,7 +116,7 @@ services:
   #     - kc_db_password
 
   clip:
-    image: ffrycz/image_search_app-clip:1.0
+    image: ffrycz/image_search_app-clip:latest
     container_name: clip
     ports:
       - 4000:4000
