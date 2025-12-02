@@ -16,10 +16,11 @@ def build_posts_array(posts):
     results = []
     for post in posts:
         results.append({
-            "id": post.id,
+            "id": f"local-{post.id}",
             "author": post.author,
             "description": post.description,
             "keywords": [kw.name for kw in post.keywords],
-            "image_url": url_for("serve_image", filename=post.image_path, _external=True)
+            "image_url": url_for("serve_image", filename=post.image_path, _external=True),
+            "source_url": url_for("serve_image", filename=post.image_path, _external=True)
         })
     return results

@@ -8,6 +8,8 @@ from db_connector import db, Post, Keyword
 from config import get_secret, build_posts_array, UPLOAD_FOLDER
 from searcher import Searcher
 from key_words import getKeyWords
+import time
+import logging
 
 MAX_SEARCH = 30
 
@@ -49,6 +51,8 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 db_password = get_secret('MYSQL_ROOT_PASSWORD')
 
+logging.info("Waiting for database and clip to fully start.")
+time.sleep(5)
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://root:{db_password}@database:3306/photos_db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -84,7 +88,7 @@ def get_images():
     final_results = all_results[:top_k]
 
     final_images = [item[0] for item in final_results]
-    return jsonify({"top_images": final_images})
+    return jsonify(final_images)
 
 @app.route('/api/createPost', methods=['POST'])
 def post_image():
