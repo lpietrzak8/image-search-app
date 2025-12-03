@@ -19,7 +19,7 @@ app.register_blueprint(healthz, url_prefix="/")
 cors = CORS(
     app,
     resources={
-        r"/search/*": {"origin": "*"},
+        r"/api/*": {"origin": "*"},
         r"/health/*": {"origin": "*"},
     }
 )
