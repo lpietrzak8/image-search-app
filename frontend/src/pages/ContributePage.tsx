@@ -1,5 +1,13 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import "./ContributePage.css";
+
+const RECAPTCHA_SITE_KEY = "6LcRbSAsAAAAAO7V3ox2Bs-5Trj-a3nECArCrc9G";
+
+declare global {
+  interface Window {
+    grecaptcha: any;
+  }
+}
 
 const ContributePage = () => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -7,7 +15,32 @@ const ContributePage = () => {
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      if (window.grecaptcha) {
+        window.grecaptcha.ready(() => {
+          setRecaptchaLoaded(true);
+        });
+      }
+    };
+    document.head.appendChild(script);
+
+    return () => {
+      const scriptElement = document.querySelector(
+        `script[src*="recaptcha/api.js"]`
+      );
+      if (scriptElement) {
+        document.head.removeChild(scriptElement);
+      }
+    };
+  }, []);
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -27,7 +60,27 @@ const ContributePage = () => {
     }
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const executeRecaptcha = async (): Promise<string | null> => {
+    if (!recaptchaLoaded || !window.grecaptcha) {
+      setError("reCAPTCHA is still loading. Please wait a moment.");
+      setTimeout(() => setError(""), 3000);
+      return null;
+    }
+
+    try {
+      const token = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, {
+        action: "submit",
+      });
+      return token;
+    } catch (err) {
+      console.error("reCAPTCHA error:", err);
+      setError("reCAPTCHA verification failed. Please try again.");
+      setTimeout(() => setError(""), 3000);
+      return null;
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     if (!description && !selectedImage) {
@@ -48,20 +101,44 @@ const ContributePage = () => {
       return;
     }
 
-    // Tutaj będzie logika wysyłania do backendu
-    console.log("Image:", selectedImage);
-    console.log("Description:", description);
-    setError("");
-    setSuccess("Image uploaded successfully!");
-    setTimeout(() => {
-      setSuccess("");
-      setSelectedImage(null);
-      setPreviewUrl("");
-      setDescription("");
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+    const recaptchaToken = await executeRecaptcha();
+    if (!recaptchaToken) {
+      return;
+    }
+    try {
+      const formData = new FormData();
+      formData.append("image", selectedImage);
+      formData.append("description", description);
+      formData.append("recaptcha_token", recaptchaToken);
+
+      const response = await fetch("http://localhost:5001/api/contribute", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setError("");
+        setSuccess(result.message || "Image uploaded successfully!");
+        setTimeout(() => {
+          setSuccess("");
+          setSelectedImage(null);
+          setPreviewUrl("");
+          setDescription("");
+          if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+          }
+        }, 3000);
+      } else {
+        setError(result.error || "Upload failed. Please try again.");
+        setTimeout(() => setError(""), 3000);
       }
-    }, 3000);
+    } catch (err) {
+      console.error("Upload error:", err);
+      setError("Network error. Please check your connection.");
+      setTimeout(() => setError(""), 3000);
+    }
   };
 
   return (
@@ -142,9 +219,26 @@ const ContributePage = () => {
         </div>
 
         <div className="security-info">
-          <p>
-            🛡️ This form is protected by reCAPTCHA to prevent spam and abuse
-          </p>
+          <p>🛡️ This form is protected by Google reCAPTCHA v3</p>
+          <small>
+            This site is protected by reCAPTCHA and the Google{" "}
+            <a
+              href="https://policies.google.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </a>{" "}
+            and{" "}
+            <a
+              href="https://policies.google.com/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Terms of Service
+            </a>{" "}
+            apply.
+          </small>
         </div>
       </div>
     </div>

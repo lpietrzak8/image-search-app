@@ -218,7 +218,24 @@
 }
 
 .security-info p {
-  margin: 0;
+  margin: 0 0 5px 0;
   color: #155724;
   font-size: 0.95em;
+  font-weight: 600;
+}
+
+.security-info small {
+  display: block;
+  color: #155724;
+  font-size: 0.75em;
+  line-height: 1.4;
+}
+
+.security-info a {
+  color: #155724;
+  text-decoration: underline;
+}
+
+.security-info a:hover {
+  color: #0d3d1a;
 }
