@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import axios from "axios";
 
-const backendUrl = "http://localhost:5001";
+const backendUrl = "/api/search";
 const numberOfResults = 30;
 
 function HomePage() {
@@ -24,7 +24,7 @@ function HomePage() {
     setLoading(true);
 
     axios
-      .get(`${backendUrl}/api/search`, {
+      .get(backendUrl, {
         params: {
           s_query: query,
           k: numberOfResults,
@@ -32,6 +32,7 @@ function HomePage() {
       })
       .then((response) => {
         const data = response.data;
+        console.log(data);
         setResults(data);
       })
       .catch((error) => {

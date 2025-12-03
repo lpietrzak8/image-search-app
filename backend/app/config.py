@@ -20,7 +20,7 @@ def build_posts_array(posts):
             "author": post.author,
             "description": post.description,
             "keywords": [kw.name for kw in post.keywords],
-            "image_url": url_for("serve_image", filename=post.image_path, _external=True),
-            "source_url": url_for("serve_image", filename=post.image_path, _external=True)
+            "image_url": url_for("serve_image", filename=post.image_path),
+            "source_url": url_for("serve_image", filename=post.image_path)
         })
     return results

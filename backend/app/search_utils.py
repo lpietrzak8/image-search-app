@@ -51,7 +51,7 @@ def fetch_images_tag(search_keyword, num_images):
             clip_path = local_path.replace(UPLOAD_FOLDER, CLIP_MOUNT_PATH, 1)
             all_clip_paths.append(clip_path)
 
-            public_url = url_for("serve_image", filename=f"pixabay/{filename}", _external=True)
+            public_url = url_for("serve_image", filename=f"pixabay/{filename}")
             
             all_posts_json.append({
                 "id": f"pixabay-{hit.get("id")}",
