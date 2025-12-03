@@ -26,6 +26,9 @@ const Navbar = ({ isLoggedIn }: NavbarProps) => {
           <li>
             <NavLink to="/mission">Our mission</NavLink>
           </li>
+          <li>
+            <NavLink to="/contribute">Contribute Data</NavLink>
+          </li>
         </ul>
       </nav>
     </header>

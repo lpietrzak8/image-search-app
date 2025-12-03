@@ -5,6 +5,7 @@ import HomePage from "./pages/HomePage";
 import MissionPage from "./pages/MissionPage";
 import LogInPage from "./pages/LogInPage";
 import MyAccountPage from "./pages/MyAccountPage";
+import ContributePage from "./pages/ContributePage";
 import "./App.css";
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
           path="/my-account"
           element={<MyAccountPage setIsLoggedIn={setIsLoggedIn} />}
         />
+        <Route path="/contribute" element={<ContributePage />} />
       </Routes>
     </div>
   );
