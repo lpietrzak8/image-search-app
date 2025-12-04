@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   frontend:
-    image: ffrycz/image_search_app-frontend:latest
+    build: ./frontend
     container_name: frontend
     ports:
       - "3000:80"
@@ -13,7 +13,7 @@ services:
       - app-network
 
   backend:
-    image: ffrycz/image_search_app-backend:latest
+    build: ./backend
     container_name: flask-backend
     environment:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
@@ -73,50 +73,45 @@ services:
     secrets:
       - db_password
 
-  # keycloak-db:
-  #   image: postgres:15
-  #   container_name: keycloak-db
-  #   environment:
-  #     POSTGRES_DB: keycloak
-  #     POSTGRES_USER: keycloak
-  #     POSTGRES_PASSWORD: /run/secrets/kc_db_password
-  #   depends_on:
-  #     - clip
-  #   volumes:
-  #     - /var/lib/postgresql/keycloak_data:/var/lib/postgresql/data
-  #   networks:
-  #     - keycloak-network
-  #   secrets:
-  #     - kc_db_password
+  keycloak-db:
+    image: postgres:15
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: secret
+    depends_on:
+      - clip
+    volumes:
+      - keycloak-data:/var/lib/postgresql/data
+    networks:
+      - keycloak-network
 
-  # keycloak:
-  #   image: quay.io/keycloak/keycloak:26.2.5
-  #   container_name: keycloak
-  #   command: start-dev
-  #   environment:
-  #     KC_DB: postgres
-  #     KC_DB_URL_HOST: keycloak-db
-  #     KC_DB_URL_DATABASE: keycloak
-  #     KC_DB_USERNAME: keycloak
-  #     KC_DB_PASSWORD: /run/secrets/kc_db_password
-  #     KC_HOSTNAME: localhost
-  #     KEYCLOAK_ADMIN: admin
-  #     KEYCLOAK_ADMIN_PASSWORD: /run/secrets/kc_admin_password
-  #   ports:
-  #     - 8080:8080
-  #   depends_on:
-  #     - keycloak-db
-  #     - clip
-  #   volumes:
-  #     - ./keycloak-import:/opt/keycloak/data/import
-  #   networks:
-  #     - keycloak-network
-  #   secrets:
-  #     - kc_admin_password
-  #     - kc_db_password
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2.5
+    container_name: keycloak
+    command: start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: secret
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_RELATIVE_PATH: /
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+    ports:
+      - 8080:8080
+    depends_on:
+      - keycloak-db
+      - clip
+    networks:
+      - keycloak-network
 
   clip:
-    image: ffrycz/image_search_app-clip:latest
+    build: ./clip
     container_name: clip
     ports:
       - 4000:4000
@@ -128,10 +123,35 @@ services:
     networks:
       - app-network
 
+  worker:
+    build: ./backend
+    container_name: embedding-worker
+    command: python -m app.worker
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
+      PIXABAY_API_KEY_FILE: /run/secrets/pixabay_api_key
+      MODEL_HOST: clip
+      MODEL_PORT: 4000
+    volumes:
+      - shared_images:/app/uploads
+    networks:
+      - app-network
+      - database-network
+      - redis-network
+    depends_on:
+      - database
+      - memoryStore
+      - clip
+    secrets:
+      - db_password
+      - pixabay_api_key
+    restart: unless-stopped
+
 volumes:
   db-data:
   shared_images:
   clip-cache:
+  keycloak-data:
 
 networks:
   app-network:
@@ -140,9 +160,15 @@ networks:
     driver: bridge
   database-network:
     driver: bridge
+  keycloak-network:
+    driver: bridge
 
 secrets:
   db_password:
     file: ./secrets/db_password.txt
   pixabay_api_key:
     file: ./secrets/pixabay_api_key.txt
+  kc_admin_password:
+    file: ./secrets/kc_admin_password.txt
+  kc_db_password:
+    file: ./secrets/kc_db_password.txt

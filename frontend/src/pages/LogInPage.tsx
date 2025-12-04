@@ -1,5 +1,7 @@
-import { useNavigate } from 'react-router-dom';
-import type { Dispatch, SetStateAction } from 'react';
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import type { Dispatch, SetStateAction } from "react";
+import keycloak from "../keycloak";
 import "./LogInPage.css";
 
 interface LogInPageProps {
@@ -9,9 +11,28 @@ interface LogInPageProps {
 const LogInPage = ({ setIsLoggedIn }: LogInPageProps) => {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (keycloak.authenticated) {
+        setIsLoggedIn(true);
+        setTimeout(() => {
+          navigate("/");
+        }, 100);
+      }
+    };
+    checkAuth();
+  }, [keycloak.authenticated, setIsLoggedIn, navigate]);
+
   const handleLogin = () => {
-    setIsLoggedIn(true);
-    navigate('/');
+    keycloak.login({
+      redirectUri: window.location.origin + "/login",
+    });
+  };
+
+  const handleRegister = () => {
+    keycloak.register({
+      redirectUri: window.location.origin + "/login",
+    });
   };
 
   return (
@@ -22,7 +43,9 @@ const LogInPage = ({ setIsLoggedIn }: LogInPageProps) => {
         <button className="auth-button" onClick={handleLogin}>
           Login
         </button>
-        <button className="auth-button">Register</button>
+        <button className="auth-button" onClick={handleRegister}>
+          Register
+        </button>
       </div>
     </div>
   );
