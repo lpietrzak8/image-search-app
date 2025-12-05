@@ -111,7 +111,7 @@ const ContributePage = () => {
       formData.append("description", description);
       formData.append("recaptcha_token", recaptchaToken);
 
-      const response = await fetch("http://localhost:5001/api/contribute", {
+      const response = await fetch("/api/contribute", {
         method: "POST",
         body: formData,
       });

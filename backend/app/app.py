@@ -5,14 +5,12 @@ from flask_healthz import healthz, HealthError
 import json
 from werkzeug.utils import secure_filename
 from db_connector import db, Post, Keyword
-from config import get_secret, build_posts_array, UPLOAD_FOLDER
+from config import get_secret, build_posts_array, UPLOAD_FOLDER, verify_recaptcha, allowed_file
 from searcher import Searcher
 from key_words import getKeyWords
 import time
 import logging
-import requests
 import uuid
-from datetime import datetime
 
 MAX_SEARCH = 30
 
@@ -252,41 +250,6 @@ def contribute_image():
     except Exception as e:
         logging.error(f"Contribution error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
-
-def verify_recaptcha(token):
-    """Verify reCAPTCHA token with Google API."""
-    if not token:
-        return False
-    
-    secret_key = "6LcRbSAsAAAAABSQh_LgKE3mGJrlWoukxPQl0Hb4"
-    
-    try:
-        response = requests.post(
-            'https://www.google.com/recaptcha/api/siteverify',
-            data={
-                'secret': secret_key,
-                'response': token
-            },
-            timeout=5
-        )
-        
-        result = response.json()
-        logging.info(f"reCAPTCHA verification: success={result.get('success')}, score={result.get('score')}")
-        
-        # For v3, check score (0.0 - 1.0, higher is better)
-        if result.get('success') and result.get('score', 0) >= 0.5:
-            return True
-        
-        return False
-        
-    except Exception as e:
-        logging.error(f"reCAPTCHA verification error: {str(e)}")
-        return False
-
-def allowed_file(filename, allowed_extensions):
-    """Check if file has allowed extension."""
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 @app.route('/health', methods=['GET'])
 def healthcheck():

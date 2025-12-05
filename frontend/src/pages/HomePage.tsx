@@ -32,7 +32,6 @@ function HomePage() {
       })
       .then((response) => {
         const data = response.data;
-        console.log(data);
         setResults(data);
       })
       .catch((error) => {

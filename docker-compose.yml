@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   frontend:
-    build: ./frontend
+    image: ffrycz/image_search_app-frontend:latest
     container_name: frontend
     ports:
       - "3000:80"
@@ -13,11 +13,12 @@ services:
       - app-network
 
   backend:
-    build: ./backend
+    image: ffrycz/image_search_app-backend:latest
     container_name: flask-backend
     environment:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
       PIXABAY_API_KEY_FILE: /run/secrets/pixabay_api_key
+      CAPTCHA_KEY_FILE: /run/secrets/captha_key
       MODEL_HOST: clip
       MODEL_PORT: 4000
     ports:
@@ -46,6 +47,7 @@ services:
     secrets:
       - db_password
       - pixabay_api_key
+      - captha_key
 
   memoryStore:
     image: redis
@@ -111,7 +113,8 @@ services:
       - keycloak-network
 
   clip:
-    build: ./clip
+    # build: ./clip
+    image: ffrycz/image_search_app-clip:latest
     container_name: clip
     ports:
       - 4000:4000
@@ -172,3 +175,5 @@ secrets:
     file: ./secrets/kc_admin_password.txt
   kc_db_password:
     file: ./secrets/kc_db_password.txt
+  captha_key:
+    file: ./secrets/reCaptcha_key.txt
