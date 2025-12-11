@@ -73,7 +73,6 @@ async def compute_similarity(req: SimilarityRequest):
         similarities = (img_embs @ text_emb.T).squeeze(1)
         scores = similarities.tolist()
 
-        top_k = min(req.top_k, len(scores))
         top_indices = torch.topk(similarities, top_k).indices.tolist()
         top_scores = [scores[i] for i in top_indices]
 

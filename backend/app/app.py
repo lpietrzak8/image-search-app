@@ -5,11 +5,12 @@ from flask_healthz import healthz, HealthError
 import json
 from werkzeug.utils import secure_filename
 from db_connector import db, Post, Keyword
-from config import get_secret, build_posts_array, UPLOAD_FOLDER
+from config import get_secret, build_posts_array, UPLOAD_FOLDER, verify_recaptcha, allowed_file
 from searcher import Searcher
 from key_words import getKeyWords
 import time
 import logging
+import uuid
 
 MAX_SEARCH = 30
 
@@ -159,6 +160,96 @@ def serve_image(filename):
     if not os.path.exists(safe_path):
         return jsonify({"error": f"Image '{filename}' not found"}), 404
     return send_from_directory(UPLOAD_FOLDER, filename)
+
+@app.route('/api/contribute', methods=['POST'])
+def contribute_image():
+    """Handle image contribution with reCAPTCHA verification."""
+    try:
+        # Get reCAPTCHA token
+        recaptcha_token = request.form.get('recaptcha_token', '')
+        
+        # Verify reCAPTCHA
+        if not verify_recaptcha(recaptcha_token):
+            return jsonify({"error": "reCAPTCHA verification failed"}), 400
+        
+        # Check if image is uploaded
+        if 'image' not in request.files:
+            return jsonify({"error": "No image uploaded"}), 400
+        
+        image = request.files['image']
+        if image.filename == '':
+            return jsonify({"error": "No image selected"}), 400
+        
+        # Get description
+        description = request.form.get('description', '').strip()
+        if not description:
+            return jsonify({"error": "Description is required"}), 400
+        
+        if len(description) < 10:
+            return jsonify({"error": "Description must be at least 10 characters long"}), 400
+        
+        if len(description) > 1000:
+            return jsonify({"error": "Description must be less than 1000 characters"}), 400
+        
+        # Validate image file
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'webp'}
+        allowed_mimetypes = {'image/png', 'image/jpeg', 'image/webp'}
+        
+        if not allowed_file(image.filename, allowed_extensions):
+            return jsonify({"error": "Invalid file extension. Allowed: PNG, JPG, JPEG, WebP"}), 400
+        
+        if not hasattr(image, 'mimetype') or image.mimetype not in allowed_mimetypes:
+            return jsonify({"error": "Invalid file type. Must be an image"}), 400
+        
+        # Check file size (max 10MB)
+        image.seek(0, os.SEEK_END)
+        file_size = image.tell()
+        image.seek(0)
+        
+        if file_size > 10 * 1024 * 1024:  # 10MB
+            return jsonify({"error": "File size must be less than 10MB"}), 400
+        
+        # Generate unique filename
+        file_extension = os.path.splitext(image.filename)[1].lower()
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        
+        # Create contribution folder
+        contribution_folder = os.path.join(UPLOAD_FOLDER, "contributions")
+        os.makedirs(contribution_folder, exist_ok=True)
+        
+        # Save image
+        image_path = os.path.join(contribution_folder, unique_filename)
+        image.save(image_path)
+        
+        # Extract keywords from description
+        keywords = getKeyWords(description)
+        keyword_objects = []
+        for kw in keywords if keywords else []:
+            keyword = Keyword.query.filter_by(name=kw).first()
+            if not keyword:
+                keyword = Keyword(name=kw)
+            keyword_objects.append(keyword)
+        
+        # Create database entry
+        new_post = Post(
+            author="contributor",
+            description=description,
+            keywords=keyword_objects,
+            image_path=os.path.relpath(image_path, UPLOAD_FOLDER)
+        )
+        db.session.add(new_post)
+        db.session.commit()
+        
+        logging.info(f"New contribution: post_id={new_post.id}, filename={unique_filename}")
+        
+        return jsonify({
+            "message": "Thank you for your contribution!",
+            "post_id": new_post.id
+        }), 201
+        
+    except Exception as e:
+        logging.error(f"Contribution error: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/health', methods=['GET'])
 def healthcheck():

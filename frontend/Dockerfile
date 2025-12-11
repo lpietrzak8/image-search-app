@@ -13,6 +13,8 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 # Copy built assets from builder stage
 COPY --from=builder /app/dist .
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Expose port 80
 EXPOSE 80
 # Containers run nginx with global directives and daemon off

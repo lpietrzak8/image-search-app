@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import keycloak from "../keycloak";
 import "./MyAccountPage.css";
 
 interface MyAccountPageProps {
@@ -11,14 +12,22 @@ const MyAccountPage = ({ setIsLoggedIn }: MyAccountPageProps) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("resources");
 
+  useEffect(() => {
+    if (!keycloak.authenticated) {
+      navigate("/login");
+    }
+  }, [navigate]);
+
   const handleLogout = () => {
+    keycloak.logout({
+      redirectUri: window.location.origin + "/",
+    });
     setIsLoggedIn(false);
-    navigate("/");
   };
 
   const user = {
-    username: " jane_doe",
-    email: "example@example.com",
+    username: keycloak.tokenParsed?.preferred_username || "User",
+    email: keycloak.tokenParsed?.email || "No email",
   };
 
   return (
