@@ -32,52 +32,56 @@ const MyAccountPage = ({ setIsLoggedIn }: MyAccountPageProps) => {
 
   return (
     <div className="my-account-container">
-      <h1>My Account</h1>
-      <div className="tabs">
-        <button
-          className={`tab-button ${activeTab === "resources" ? "active" : ""}`}
-          onClick={() => setActiveTab("resources")}
-        >
-          My Resources
-        </button>
-        <button
-          className={`tab-button ${activeTab === "info" ? "active" : ""}`}
-          onClick={() => setActiveTab("info")}
-        >
-          Account Information
-        </button>
-        <button
-          className={`tab-button ${activeTab === "logout" ? "active" : ""}`}
-          onClick={() => setActiveTab("logout")}
-        >
-          Log Out
-        </button>
-      </div>
+      <div className="my-account-content">
+        <h1>My Account</h1>
+        <div className="tabs">
+          <button
+            className={`tab-button ${
+              activeTab === "resources" ? "active" : ""
+            }`}
+            onClick={() => setActiveTab("resources")}
+          >
+            My Resources
+          </button>
+          <button
+            className={`tab-button ${activeTab === "info" ? "active" : ""}`}
+            onClick={() => setActiveTab("info")}
+          >
+            Account Information
+          </button>
+          <button
+            className={`tab-button ${activeTab === "logout" ? "active" : ""}`}
+            onClick={() => setActiveTab("logout")}
+          >
+            Log Out
+          </button>
+        </div>
 
-      <div className="tab-content">
-        {activeTab === "info" && (
-          <div className="user-info">
-            <p>
-              <strong>Username:</strong> {user.username}
-            </p>
-            <p>
-              <strong>Email:</strong> {user.email}
-            </p>
-          </div>
-        )}
-        {activeTab === "resources" && (
-          <div>
-            <p>Your resources will be displayed here.</p>
-          </div>
-        )}
-        {activeTab === "logout" && (
-          <div>
-            <p>Are you sure you want to log out?</p>
-            <button onClick={handleLogout} className="logout-button">
-              Yes, Log Out
-            </button>
-          </div>
-        )}
+        <div className="tab-content">
+          {activeTab === "info" && (
+            <div className="user-info">
+              <p>
+                <strong>Username:</strong> {user.username}
+              </p>
+              <p>
+                <strong>Email:</strong> {user.email}
+              </p>
+            </div>
+          )}
+          {activeTab === "resources" && (
+            <div>
+              <p>Your resources will be displayed here.</p>
+            </div>
+          )}
+          {activeTab === "logout" && (
+            <div>
+              <p>Are you sure you want to log out?</p>
+              <button onClick={handleLogout} className="logout-button">
+                Yes, Log Out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
