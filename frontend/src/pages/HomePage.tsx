@@ -55,7 +55,7 @@ function HomePage() {
             <textarea
               ref={inputRef}
               className="search-input"
-              placeholder=""
+              placeholder="Search..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />

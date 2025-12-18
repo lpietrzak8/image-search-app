@@ -3,9 +3,11 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 50px;
-  background-color: #5b82a6;
-  color: #a8c4ec;
-  border-bottom: 1px solid #a8c4ec;
+  background-color: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  color: #f8fafc;
+  border-bottom: 1px solid #334155;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .logo {
@@ -13,6 +15,7 @@
   font-weight: bold;
   letter-spacing: 2px;
   font-family: "Courier New", Courier, monospace;
+  color: #f8fafc;
 }
 
 .header nav ul {
@@ -27,7 +30,7 @@
 }
 
 .header nav ul li a {
-  color: black;
+  color: #f8fafc;
   text-decoration: none;
   font-size: 1.6em;
   transition: all 0.3s ease;
@@ -41,7 +44,7 @@
   height: 2px;
   bottom: -5px;
   left: 50%;
-  background-color: #a8c4ec;
+  background-color: #6366f1;
   transition: all 0.3s ease;
   transform: translateX(-50%);
 }
@@ -51,10 +54,10 @@
 }
 
 .header nav ul li a:hover {
-  color: #a8c4ec;
+  color: #6366f1;
 }
 
 .header nav ul li a.active {
-  color: #a8c4ec;
+  color: #6366f1;
   font-weight: bold;
 }

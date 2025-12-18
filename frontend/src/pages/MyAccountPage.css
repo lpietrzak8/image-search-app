@@ -2,12 +2,30 @@
   padding: 2rem;
   max-width: 800px;
   margin: 0 auto;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
+  min-height: calc(100vh - 60px);
+  background-color: #0f172a;
+}
+
+.my-account-content {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 2px solid #334155;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.my-account-container h1 {
+  color: #f8fafc;
+  font-size: 2.5em;
+  margin-bottom: 30px;
+  margin-top: 0;
 }
 
 .tabs {
   display: flex;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 2px solid #334155;
   margin-bottom: 1.5rem;
 }
 
@@ -17,24 +35,28 @@
   border: none;
   background-color: transparent;
   font-size: 1rem;
-  color: #555;
+  color: rgba(248, 250, 252, 0.6);
   position: relative;
-  transition: color 0.3s;
+  transition: all 0.3s;
 }
 
 .tab-button.active {
-  color: #000;
+  color: #f8fafc;
   font-weight: 600;
 }
 
 .tab-button.active::after {
-  content: '';
+  content: "";
   position: absolute;
-  bottom: -1px;
+  bottom: -2px;
   left: 0;
   right: 0;
   height: 2px;
-  background-color: #007bff;
+  background-color: #6366f1;
+}
+
+.tab-button:hover {
+  color: #6366f1;
 }
 
 .tab-content {
@@ -44,24 +66,30 @@
 .user-info p {
   margin: 0.75rem 0;
   font-size: 1.1rem;
+  color: rgba(248, 250, 252, 0.8);
 }
 
 .user-info strong {
-  color: #333;
+  color: #f8fafc;
+  font-weight: 600;
 }
 
 .logout-button {
   margin-top: 1.5rem;
-  padding: 0.6rem 1.2rem;
-  background-color: #d9534f;
-  color: white;
+  padding: 0.8rem 1.5rem;
+  background-color: #ef4444;
+  color: #f8fafc;
   border: none;
-  border-radius: 5px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 1rem;
-  transition: background-color 0.3s;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+  transition: all 0.3s;
 }
 
 .logout-button:hover {
-  background-color: #c9302c;
+  background-color: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
 }
