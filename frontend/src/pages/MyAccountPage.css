@@ -93,3 +93,61 @@
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
 }
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .my-account-container {
+    padding: 1.5rem 1rem;
+  }
+
+  .my-account-content {
+    padding: 30px 20px;
+  }
+
+  .my-account-container h1 {
+    font-size: 2em;
+    margin-bottom: 20px;
+  }
+
+  .tabs {
+    flex-wrap: wrap;
+  }
+
+  .tab-button {
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .user-info p {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .my-account-container {
+    padding: 1rem 0.5rem;
+  }
+
+  .my-account-content {
+    padding: 20px 15px;
+  }
+
+  .my-account-container h1 {
+    font-size: 1.6em;
+    margin-bottom: 15px;
+  }
+
+  .tab-button {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .user-info p {
+    font-size: 0.95rem;
+  }
+
+  .logout-button {
+    width: 100%;
+    padding: 0.7rem 1rem;
+  }
+}
