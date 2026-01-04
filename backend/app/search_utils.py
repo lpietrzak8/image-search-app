@@ -1,70 +1,21 @@
-from io import BytesIO
-from PIL import Image
-from config import get_secret, UPLOAD_FOLDER, CLIP_MOUNT_PATH, build_posts_array
-import requests
+from config import UPLOAD_FOLDER, CLIP_MOUNT_PATH, build_posts_array
 import logging
 from db_connector import Keyword
 import os
-from flask import url_for, current_app
+from flask import current_app
+from API_providers import API_PROVIDERS
 
-ORIGINAL_API = "https://pixabay.com/api/?key="
-API_KEY = get_secret('PIXABAY_API_KEY')
-PIXABAY_API = ORIGINAL_API + API_KEY
 
+
+all_clip_paths = []
+all_posts_json = []
 
 def fetch_images_tag(search_keyword, num_images):
-    logging.info(
-        f"Fetching up to {num_images} images for keyword '{search_keyword}' from Pixabay."
-    )
-
-    query = (
-        PIXABAY_API
-        + "&q="
-        + search_keyword.lower()
-        + "&image_type=photo&safesearch=true&per_page="
-        + str(num_images)
-    )
-
-    response = requests.get(query)
-    output = response.json()
-
-    all_clip_paths = []
-    all_posts_json = []
-    pixabay_folder = os.path.join(UPLOAD_FOLDER, "pixabay")
-    os.makedirs(pixabay_folder, exist_ok=True)
-
-    for hit in output.get("hits", []):
-        image_url = hit.get("webformatURL")
-        author = hit.get("user")
-
-        if not image_url:
-            continue
-
-        try:
-            response = requests.get(image_url)
-            image = Image.open(BytesIO(response.content)).convert("RGB")
-            
-            filename = f"{search_keyword}_{os.path.basename(image_url).split('?')[0]}"
-            local_path = os.path.join(pixabay_folder, filename)
-            image.save(local_path)
-            
-            clip_path = local_path.replace(UPLOAD_FOLDER, CLIP_MOUNT_PATH, 1)
-            all_clip_paths.append(clip_path)
-
-            public_url = url_for("serve_image", filename=f"pixabay/{filename}")
-            
-            all_posts_json.append({
-                "id": f"pixabay-{hit.get("id")}",
-                "author": author,
-                "description": None,
-                "keywords": [search_keyword],
-                "image_url": public_url,
-                "source_url": hit.get("pageURL")})
-        
-        except Exception as e:
-            logging.warning(f"Failed to fetch {image_url}: {e}")
     
-    logging.info(f"Fetched {len(all_posts_json)} images from Pixabay.")
+    for provider in API_PROVIDERS:
+        clip_paths, posts_json = provider.fetch(search_keyword, num_images)
+        all_clip_paths.extend(clip_paths)
+        all_posts_json.extend(posts_json)
 
     logging.info(f"Searching database for keyword '{search_keyword}")
     
