@@ -3,16 +3,13 @@ import logging
 from db_connector import Keyword
 import os
 from flask import current_app
-from API_providers import API_PROVIDERS
-
-
 
 all_clip_paths = []
 all_posts_json = []
 
-def fetch_images_tag(search_keyword, num_images):
+def fetch_images_tag(search_keyword, num_images, api_providers):
     
-    for provider in API_PROVIDERS:
+    for provider in api_providers:
         clip_paths, posts_json = provider.fetch(search_keyword, num_images)
         all_clip_paths.extend(clip_paths)
         all_posts_json.extend(posts_json)

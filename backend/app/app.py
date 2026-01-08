@@ -6,6 +6,7 @@ import json
 from werkzeug.utils import secure_filename
 from db_connector import db, Post, Keyword
 from config import get_secret, build_posts_array, UPLOAD_FOLDER, verify_recaptcha, allowed_file
+from API_providers import API_PROVIDERS
 from searcher import Searcher
 from key_words import getKeyWords
 import time
@@ -62,7 +63,7 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-searcher = Searcher()
+searcher = Searcher(API_PROVIDERS)
 
 @app.route("/api/search", methods=['GET'])
 def get_images():

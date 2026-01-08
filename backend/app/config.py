@@ -21,11 +21,15 @@ def build_posts_array(posts):
     for post in posts:
         results.append({
             "id": f"local-{post.id}",
-            "author": post.author,
+            "author": {
+                "name": post.author,
+                "url": None
+            },
             "description": post.description,
             "keywords": [kw.name for kw in post.keywords],
             "image_url": url_for("serve_image", filename=post.image_path),
-            "source_url": url_for("serve_image", filename=post.image_path)
+            "source_url": url_for("serve_image", filename=post.image_path),
+            "provider": "PHOTO-SEARCH"
         })
     return results
 

@@ -2,8 +2,8 @@ version: "3.8"
 
 services:
   frontend:
-    # image: ffrycz/image_search_app-frontend:latest
-    build: frontend
+    image: ffrycz/image_search_app-frontend:latest
+    # build: frontend
     container_name: frontend
     ports:
       - "3000:80"
@@ -14,13 +14,14 @@ services:
       - app-network
 
   backend:
-    # image: ffrycz/image_search_app-backend:latest
-    build: ./backend
+    image: ffrycz/image_search_app-backend:latest
+    # build: ./backend
     container_name: flask-backend
     environment:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
       PIXABAY_API_KEY_FILE: /run/secrets/pixabay_api_key
-      PIXELS_API_KEY_FILE: /run/secrets/pixels_api_key
+      # PEXELS_API_KEY_FILE: /run/secrets/pexels_api_key
+      UNSPLASH_API_KEY_FILE: /run/secrets/unsplash_api_key
       CAPTCHA_KEY_FILE: /run/secrets/captha_key
       MODEL_HOST: clip
       MODEL_PORT: 4000
@@ -50,7 +51,8 @@ services:
     secrets:
       - db_password
       - pixabay_api_key
-      - pixels_api_key
+      - pexels_api_key
+      - unsplash_api_key
       - captha_key
 
   memoryStore:
@@ -174,8 +176,10 @@ secrets:
     file: ./secrets/db_password.txt
   pixabay_api_key:
     file: ./secrets/pixabay_api_key.txt
-  pixels_api_key:
-    file: ./secrets/pixels_api_key.txt
+  pexels_api_key:
+    file: ./secrets/pexels_api_key.txt
+  unsplash_api_key:
+    file: ./secrets/unsplash_api_key.txt
   kc_admin_password:
     file: ./secrets/kc_admin_password.txt
   kc_db_password:

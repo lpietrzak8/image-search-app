@@ -13,7 +13,10 @@ model_host = os.getenv("MODEL_HOST")
 model_port = os.getenv("MODEL_PORT")
 
 
-class Searcher:    
+class Searcher:
+    def __init__(self, api_providers):
+        self.api_providers = api_providers
+
     def get_similar_images(self, keyword, semantic_query, max_images, top_k):
         if redis == "true":
             images_redis_key = keyword + "_images"
@@ -24,12 +27,12 @@ class Searcher:
                 keyword_image_urls = redis_client.get(urls_redis_key)
             else:
                 (keyword_images, keyword_image_urls) = fetch_images_tag(
-                    keyword, max_images
+                    keyword, max_images, self.api_providers
                 )
                 redis_client.set(images_redis_key, keyword_images)
                 redis_client.set(urls_redis_key, keyword_image_urls)
         else:
-            (keyword_images, keyword_image_objects) = fetch_images_tag(keyword, max_images)
+            (keyword_images, keyword_image_objects) = fetch_images_tag(keyword, max_images, self.api_providers)
 
             if not keyword_images or not keyword_image_objects:
                 logging.warning("No images fatched - skipping CLIP similarity")
