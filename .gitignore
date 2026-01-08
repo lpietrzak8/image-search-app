@@ -2,7 +2,7 @@
 embeddings.pkl
 secrets/
 .DS_Store
-clip-lora-output
+clip-*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
