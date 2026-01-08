@@ -25,3 +25,36 @@
   font-size: 1.1em;
   color: rgba(248, 250, 252, 0.9);
 }
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .mission-page-container {
+    padding: 30px 20px;
+  }
+
+  .mission-page-container h1 {
+    font-size: 2em;
+    margin-bottom: 20px;
+  }
+
+  .mission-page-container p {
+    font-size: 1em;
+    line-height: 1.6;
+  }
+}
+
+@media (max-width: 480px) {
+  .mission-page-container {
+    padding: 20px 15px;
+  }
+
+  .mission-page-container h1 {
+    font-size: 1.6em;
+    margin-bottom: 15px;
+  }
+
+  .mission-page-container p {
+    font-size: 0.95em;
+    line-height: 1.5;
+  }
+}

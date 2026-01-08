@@ -11,6 +11,7 @@ function HomePage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
 
   useEffect(() => {
     if (inputRef.current) {
@@ -19,14 +20,18 @@ function HomePage() {
   }, []);
 
   const handleSearch = () => {
-    if (!query.trim()) return;
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) return;
+
+    setQuery("");
 
     setLoading(true);
+    setSearched(true);
 
     axios
       .get(backendUrl, {
         params: {
-          s_query: query,
+          s_query: trimmedQuery,
           k: numberOfResults,
         },
       })
@@ -36,11 +41,18 @@ function HomePage() {
       })
       .catch((error) => {
         console.error(`Search error: ${error}`);
-        setResults([{ description: "Something went wrong" }]);
+        setResults([]);
       })
       .finally(() => setLoading(false));
 
     resultsRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSearch();
+    }
   };
 
   return (
@@ -58,6 +70,7 @@ function HomePage() {
               placeholder="Search..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
             />
 
             <button className="search-button" onClick={handleSearch}>
@@ -69,9 +82,20 @@ function HomePage() {
       <section ref={resultsRef} className="results-section">
         <h2>results:</h2>
 
-        {loading && <p>Loading results...</p>}
+        {loading && (
+          <div className="loader-container">
+            <div className="loader"></div>
+            <p>Loading results...</p>
+          </div>
+        )}
 
-        {!loading && results.length == 0 && <p>Nothing to display yet</p>}
+        {!loading && searched && results.length === 0 && (
+          <p>No results found</p>
+        )}
+
+        {!loading && !searched && results.length === 0 && (
+          <p>Nothing to display yet</p>
+        )}
 
         <div className={"results-grid"}>
           {[...results].map((img) => (
@@ -81,7 +105,6 @@ function HomePage() {
               alt={img.description || "photo"}
             />
           ))}
-          {/* TODO add style to the grid maybe change it into FixedSizeList */}
         </div>
       </section>
     </>

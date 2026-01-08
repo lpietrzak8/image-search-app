@@ -255,3 +255,112 @@
 .security-info a:hover {
   color: #16a34a;
 }
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .contribute-page {
+    padding: 30px 15px;
+  }
+
+  .contribute-container {
+    padding: 50px 30px;
+    width: 95%;
+  }
+
+  .contribute-container h1 {
+    font-size: 2em;
+  }
+
+  .subtitle {
+    font-size: 1em;
+  }
+
+  .form-group label {
+    font-size: 1.1em;
+  }
+
+  .upload-label {
+    padding: 30px 15px;
+    min-height: 120px;
+  }
+
+  .upload-icon {
+    font-size: 2.5em;
+  }
+
+  .description-input {
+    font-size: 1.1em;
+    padding: 15px;
+  }
+
+  .submit-btn {
+    padding: 16px;
+    font-size: 1.1em;
+  }
+
+  .info-section h3 {
+    font-size: 1.2em;
+  }
+}
+
+@media (max-width: 480px) {
+  .contribute-page {
+    padding: 20px 10px;
+  }
+
+  .contribute-container {
+    padding: 30px 20px;
+    width: 98%;
+  }
+
+  .contribute-container h1 {
+    font-size: 1.6em;
+    margin-bottom: 15px;
+  }
+
+  .subtitle {
+    font-size: 0.95em;
+    margin-bottom: 30px;
+  }
+
+  .form-group label {
+    font-size: 1em;
+  }
+
+  .upload-label {
+    padding: 25px 10px;
+    min-height: 100px;
+  }
+
+  .upload-icon {
+    font-size: 2em;
+  }
+
+  .upload-label span:nth-child(2) {
+    font-size: 1em;
+  }
+
+  .description-input {
+    font-size: 1em;
+    padding: 12px;
+    min-height: 100px;
+  }
+
+  .submit-btn {
+    padding: 14px;
+    font-size: 1em;
+  }
+
+  .info-section {
+    padding: 15px;
+    margin-top: 30px;
+  }
+
+  .info-section h3 {
+    font-size: 1.1em;
+  }
+
+  .info-section li {
+    font-size: 0.9em;
+  }
+}

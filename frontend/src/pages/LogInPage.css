@@ -57,3 +57,54 @@
   transform: translateY(-3px);
   box-shadow: 0 8px 30px rgba(99, 102, 241, 0.6);
 }
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .login-page-container {
+    padding-top: 10%;
+  }
+
+  .login-box {
+    padding: 50px 30px;
+    width: 85%;
+  }
+
+  .login-box h2 {
+    font-size: 1.6em;
+  }
+
+  .login-box p {
+    font-size: 0.95em;
+    margin-bottom: 35px;
+  }
+
+  .auth-button {
+    padding: 16px;
+    font-size: 1.1em;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-page-container {
+    padding-top: 15%;
+  }
+
+  .login-box {
+    padding: 40px 20px;
+    width: 90%;
+  }
+
+  .login-box h2 {
+    font-size: 1.4em;
+  }
+
+  .login-box p {
+    font-size: 0.9em;
+    margin-bottom: 30px;
+  }
+
+  .auth-button {
+    padding: 14px;
+    font-size: 1em;
+  }
+}
