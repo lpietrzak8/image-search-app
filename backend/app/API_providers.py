@@ -10,6 +10,16 @@ import re
 import uuid
 from requests.exceptions import HTTPError
 
+AI_KEYWORDS = ["ai", "generated", "midjourney", "stable diffusion", "dall-e", "sora", "flux", "deepai"]
+
+def looks_like_ai(metadata):
+    text = " ".join([
+        metadata.get("description", ""),
+        metadata.get("alt", ""),
+        " ".join(metadata.get("tags", []))
+    ]).lower()
+    return any(k in text for k in AI_KEYWORDS)
+
 class APIProvider(ABC):
     API_UPLOADS_FOLDER = ""
     def __init__(self, api_key):
@@ -65,6 +75,9 @@ class PixabayProvider(APIProvider):
             posts_json = []
 
             for hit in output.get("hits", []):
+                if looks_like_ai(hit):
+                    continue
+
                 image_url = hit.get("webformatURL")
                 author = hit.get("user")
 
@@ -123,6 +136,9 @@ class PexelsProvider(APIProvider):
             output = response.json()
             
             for photo in output.get("photos", []):
+                if looks_like_ai(photo):
+                    continue
+
                 image_url = photo["src"]["original"]
                 author = photo["photographer"]
 
