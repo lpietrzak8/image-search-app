@@ -4,7 +4,7 @@ from flask_cors import CORS
 from flask_healthz import healthz, HealthError
 import json
 from werkzeug.utils import secure_filename
-from db_connector import db, Post, Keyword
+from db_connector import db, Post, Keyword, BlacklistedImage
 from config import get_secret, build_posts_array, UPLOAD_FOLDER, verify_recaptcha, allowed_file
 from API_providers import API_PROVIDERS
 from searcher import Searcher
@@ -251,6 +251,66 @@ def contribute_image():
     except Exception as e:
         logging.error(f"Contribution error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
+
+@app.route("/blacklist/suspend", methods=['POST'])
+def suspend_image():
+    data = request.get_json()
+
+    entry = BlacklistedImage(
+        provider=data["provider"],
+        source_url=data["source_url"],
+        status="suspended",
+        reason=data.get("reason")
+    )
+
+    db.session.add(entry)
+    db.session.commit()
+
+    return jsonify({"message": "Post suspended"}), 201
+
+@app.route("/blacklist/suspended", methods=['GET'])
+def list_suspended():
+    images = BlacklistedImage.query.filter_by(status="suspended").all()
+    
+    return jsonify([
+        {
+            "id": img.id,
+            "provider": img.provider,
+            "source_url": img.source_url,
+            "reason": img.reason
+        }
+        for img in images
+    ])
+
+@app.route("/blacklist/blocked", methods=['GET'])
+def list_suspended():
+    images = BlacklistedImage.query.filter_by(status="blocked").all()
+    
+    return jsonify([
+        {
+            "id": img.id,
+            "provider": img.provider,
+            "source_url": img.source_url,
+            "reason": img.reason
+        }
+        for img in images
+    ])
+
+@app.route("/blacklist/block/<int:image_id>", methods=['PATCH'])
+def block_image(image_id):
+    img = BlacklistedImage.query.get_or_404(image_id)
+    img.status = "blocked"
+    db.session.commit()
+
+    return jsonify({"message": "Image blocked"})
+
+@app.route("/blacklist/<int:image_id>", methods=['DELETE'])
+def remove_from_blacklist(image_id):
+    img = BlacklistedImage.query.get_or_404(image_id)
+    db.session.delete(img)
+    db.session.commit()
+
+    return jsonify({"message": "Image removed from blacklist"})
 
 @app.route('/health', methods=['GET'])
 def healthcheck():

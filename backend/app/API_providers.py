@@ -10,6 +10,7 @@ import re
 import uuid
 from requests.exceptions import HTTPError
 
+
 AI_KEYWORDS = ["ai", "generated", "midjourney", "stable diffusion", "dall-e", "sora", "flux", "deepai"]
 
 def looks_like_ai(metadata):
@@ -41,7 +42,7 @@ class APIProvider(ABC):
         return local_path, filename
 
     @abstractmethod
-    def fetch(self, keyword, num_images):
+    def fetch(self, keyword, num_images, blocked_urls):
         pass
 
 
@@ -53,7 +54,7 @@ class PixabayProvider(APIProvider):
         super().__init__(api_key)
 
 
-    def fetch(self, keyword, num_images):
+    def fetch(self, keyword, num_images, blocked_urls):
 
         logging.info(f"Fetching up to {num_images} images for keyword '{keyword}' from Pixabay.")
 
@@ -83,6 +84,11 @@ class PixabayProvider(APIProvider):
 
                 if not image_url:
                     continue
+                
+                source_url = hit.get("pageURL")
+
+                if source_url in blocked_urls:
+                    continue
 
                 local_path, filename = self.saveImage(image_url, keyword)
                 
@@ -100,7 +106,7 @@ class PixabayProvider(APIProvider):
                     "description": None,
                     "keywords": [keyword],
                     "image_url": public_url,
-                    "source_url": hit.get("pageURL"),
+                    "source_url": source_url,
                     "provider": "pixabay"})
         except  HTTPError as e:
             logging.error(f"Failed to fetch from Pixabay. Error message: {e}")    
@@ -118,7 +124,7 @@ class PexelsProvider(APIProvider):
         super().__init__(api_key)
         self.HEADERS = {"Authorization": api_key}
     
-    def fetch(self, keyword, num_images):
+    def fetch(self, keyword, num_images, blocked_urls):
         clip_paths = []
         posts_json = []
         
@@ -144,6 +150,12 @@ class PexelsProvider(APIProvider):
 
                 if not image_url:
                     continue
+                
+                source_url = photo.get("url")
+
+                if source_url in blocked_urls:
+                    continue
+
                 local_path, filename = self.saveImage(image_url, keyword)
                 
                 clip_path = local_path.replace(UPLOAD_FOLDER, CLIP_MOUNT_PATH, 1)
@@ -160,7 +172,7 @@ class PexelsProvider(APIProvider):
                     "description": photo.get("description"),
                     "keywords": [keyword],
                     "image_url": public_url,
-                    "source_url": photo.get("url"),
+                    "source_url": source_url,
                     "provider": "pexels"})
         
         except  HTTPError as e:
@@ -183,7 +195,7 @@ class UnsplashProvider(APIProvider):
             }
     
 
-    def fetch(self, keyword, num_images):
+    def fetch(self, keyword, num_images, blocked_urls):
         clip_paths = []
         posts_json = []
 
@@ -208,6 +220,11 @@ class UnsplashProvider(APIProvider):
                 if not image_url:
                     continue
 
+                source_url = result.get("links").get("html")
+
+                if source_url in blocked_urls:
+                    continue
+
                 requests.get(
                     result["links"]["download"],
                     headers=self.HEADERS,
@@ -230,7 +247,7 @@ class UnsplashProvider(APIProvider):
                     "description": result.get("description"),
                     "keywords": [keyword],
                     "image_url": public_url,
-                    "source_url": result.get("links").get("html"),
+                    "source_url": source_url,
                     "provider": "unsplash"})
         except  HTTPError as e:
             logging.error(f"Failed to fetch from Unsplash API. Error message: {e}")

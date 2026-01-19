@@ -3,14 +3,15 @@ import logging
 from db_connector import Keyword
 import os
 from flask import current_app
+from services.blacklist_service import get_blocked_urls
 
 all_clip_paths = []
 all_posts_json = []
 
 def fetch_images_tag(search_keyword, num_images, api_providers):
-    
+    blocked_urls = get_blocked_urls()
     for provider in api_providers:
-        clip_paths, posts_json = provider.fetch(search_keyword, num_images)
+        clip_paths, posts_json = provider.fetch(search_keyword, num_images, blocked_urls)
         all_clip_paths.extend(clip_paths)
         all_posts_json.extend(posts_json)
 
