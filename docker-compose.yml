@@ -31,9 +31,11 @@ services:
       - app-network
       - redis-network
       - database-network
+      - keycloak-network
     depends_on:
       - clip
       - database
+      - keycloak
     volumes:
       - shared_images:/app/uploads
     healthcheck:
@@ -108,6 +110,7 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HTTP_RELATIVE_PATH: /
+      KC_HOSTNAME: localhost
       KC_HOSTNAME_STRICT: false
       KC_HOSTNAME_STRICT_HTTPS: false
     ports:
@@ -120,6 +123,7 @@ services:
 
   clip:
     image: ffrycz/image_search_app-clip:latest
+    # build: ./clip
     container_name: clip
     ports:
       - 4000:4000

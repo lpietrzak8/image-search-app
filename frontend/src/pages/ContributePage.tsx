@@ -34,7 +34,7 @@ const ContributePage = () => {
 
     return () => {
       const scriptElement = document.querySelector(
-        `script[src*="recaptcha/api.js"]`
+        `script[src*="recaptcha/api.js"]`,
       );
       if (scriptElement) {
         document.head.removeChild(scriptElement);

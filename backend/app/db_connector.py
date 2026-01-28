@@ -40,10 +40,20 @@ class BlacklistedImage(db.Model):
     )
 
     reason = db.Column(db.String(225), nullable=True)
-    
+
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(
         db.DateTime,
         server_default=db.func.now(),
         onupdate=db.func.now()
     )
+
+class UserSavedPhoto(db.Model):
+    __tablename__ = 'user_saved_photos'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(255), nullable=False)
+    image_url = db.Column(db.String(512), nullable=False)
+    description = db.Column(db.String(512), nullable=True)
+    provider = db.Column(db.String(64), nullable=True)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
