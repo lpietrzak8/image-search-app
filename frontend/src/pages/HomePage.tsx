@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import axios from "axios";
 import keycloak from "../keycloak";
+import Post from "../components/Post";
 
 const backendUrl = "/api/search";
 const numberOfResults = 30;
@@ -8,6 +9,16 @@ const numberOfResults = 30;
 interface HomePageProps {
   isLoggedIn: boolean;
 }
+
+const mockPost = {
+  id: "test",
+  author: { name: "John Doe", url: "#" },
+  description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin ultrices nec neque ac fringilla. Curabitur mattis velit diam, eget lacinia lacus mollis sed. Praesent aliquam id massa et tristique. Nulla gravida venenatis justo eu aliquet. Cras blandit libero nibh, pharetra elementum ante tincidunt maximus. Sed tincidunt felis odio, non congue ipsum convallis sit amet.",
+  keywords: ["cat", "beach", "cool"],
+  imageUrl: "https://picsum.photos/800/600",
+  sourceUrl: "https://www.reddit.com/r/reactjs",
+  provider: "unsplash",
+};
 
 function HomePage({ isLoggedIn }: HomePageProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -19,6 +30,7 @@ function HomePage({ isLoggedIn }: HomePageProps) {
   const [searched, setSearched] = useState(false);
   const [savedPhotos, setSavedPhotos] = useState<Set<string>>(new Set());
   const [savingPhoto, setSavingPhoto] = useState<string | null>(null);
+  const [selectedPost, setSelectedPost] = useState<any | null>(mockPost);
 
   useEffect(() => {
     if (inputRef.current) {
@@ -106,7 +118,7 @@ function HomePage({ isLoggedIn }: HomePageProps) {
 
   return (
     <>
-      <main className="main-content">
+        <main className="main-content">
         <div className="search-container">
           <h1>
             Simply describe what you're looking for and search for your perfect
@@ -145,13 +157,14 @@ function HomePage({ isLoggedIn }: HomePageProps) {
         {!loading && !searched && results.length === 0 && (
           <p>Nothing to display yet</p>
         )}
-
         <div className={"results-grid"}>
           {[...results].map((img) => (
             <div key={img.id} className="image-card">
               <img
                 src={img.image_url}
                 alt={img.description || "photo"}
+                onClick={() => setSelectedPost(img)}
+
               />
               <a
                 className="download-btn"
@@ -174,6 +187,12 @@ function HomePage({ isLoggedIn }: HomePageProps) {
             </div>
           ))}
         </div>
+          {true && (
+              <Post
+                  {...selectedPost}
+                  onClose={() => setSelectedPost(null)}
+              />
+          )}
       </section>
     </>
   );
