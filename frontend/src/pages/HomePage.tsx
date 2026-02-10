@@ -10,16 +10,6 @@ interface HomePageProps {
   isLoggedIn: boolean;
 }
 
-const mockPost = {
-  id: "test",
-  author: { name: "John Doe", url: "#" },
-  description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin ultrices nec neque ac fringilla. Curabitur mattis velit diam, eget lacinia lacus mollis sed. Praesent aliquam id massa et tristique. Nulla gravida venenatis justo eu aliquet. Cras blandit libero nibh, pharetra elementum ante tincidunt maximus. Sed tincidunt felis odio, non congue ipsum convallis sit amet.",
-  keywords: ["cat", "beach", "cool"],
-  imageUrl: "https://picsum.photos/800/600",
-  sourceUrl: "https://www.reddit.com/r/reactjs",
-  provider: "unsplash",
-};
-
 function HomePage({ isLoggedIn }: HomePageProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
@@ -30,7 +20,7 @@ function HomePage({ isLoggedIn }: HomePageProps) {
   const [searched, setSearched] = useState(false);
   const [savedPhotos, setSavedPhotos] = useState<Set<string>>(new Set());
   const [savingPhoto, setSavingPhoto] = useState<string | null>(null);
-  const [selectedPost, setSelectedPost] = useState<any | null>(mockPost);
+  const [selectedPost, setSelectedPost] = useState<any | null>(null);
 
   useEffect(() => {
     if (inputRef.current) {
@@ -187,10 +177,14 @@ function HomePage({ isLoggedIn }: HomePageProps) {
             </div>
           ))}
         </div>
-          {true && (
+          {selectedPost && (
               <Post
-                  {...selectedPost}
+                  img={selectedPost}
                   onClose={() => setSelectedPost(null)}
+                  isLoggedIn={isLoggedIn}
+                  savedPhotos={savedPhotos}
+                  savingPhoto={savingPhoto}
+                  handleSavePhoto={handleSavePhoto}
               />
           )}
       </section>

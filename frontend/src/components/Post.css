@@ -8,6 +8,18 @@ a:visited {
     color: #8ba7d0;
 }
 
+button {
+    border: none;
+    outline: none;
+    background: none;
+    color: white;
+    font-size: 1.5rem;
+    border-radius: 0.5rem;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
 
 .buttonsContainer {
     display: flex;
@@ -25,24 +37,18 @@ a:visited {
 
 }
 
-button {
-    border: none;
-    outline: none;
-    background: none;
-    color: white;
-    font-size: 1.5rem;
-    border-radius: 0.5rem;
-
-}
 
 .modal-overlay {
     position: fixed;
+    overflow-y: auto;
     inset: 0;
     background: rgba(0, 0, 0, 0.65);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 2000;
+    scrollbar-color: #2f2656 #261f49;
+    scrollbar-width: thin;
 }
 
 .postContainer {
@@ -57,18 +63,63 @@ button {
     overflow: hidden;
 }
 
+.photoContainer {
+    background: #1b1738;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    justify-content: center;
+}
+
 .photoContainer img {
+    display: block;
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    justify-self: start;
+    height: auto;
+    max-width: 100%;
+    object-fit: contain;
 }
 
 .propertiesContainer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
     padding: 0.5rem;
     overflow-y: auto;
-    justify-self: end;
-    justify-content: end;
+    overflow-x: hidden;
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .postContainer {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "photo"
+            "properties";
+    }
+
+    .photoContainer {
+        max-height: 60vh;
+    }
+
+    .propertiesContainer {
+        max-height: 40vh;
+        overflow-y: auto;
+    }
+}
+
+.saveButtonsContainer {
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+.photoContainer:hover .download-btn {
+    opacity: 1;
+}
+.photoContainer:hover .save-btn {
+    opacity: 1;
 }
 
 .propertiesList {
@@ -84,19 +135,43 @@ button {
 }
 
 .propertiesItem {
-    margin: 0.5rem;
+    margin: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    overflow-wrap: anywhere;
+
 }
 
-.itemName {
+.propertiesItem:nth-child(1) {
+    display: flow;
+}
+
+.propertyName {
     font-weight: bold;
-    display: inline-block;
+    display: flex;
+}
+
+@keyframes bounce {
+    0% {top: 0;}
+    10% {top: 0.5rem;}
+    95% {top: 0.5rem;}
+    100% {top: 0;}
 }
 
 .suspendMessage {
-    color: black;
-    background-color: #fff7ed;
-    position: absolute;
-    width: 3rem;
-    height: 1.5rem;
+    animation: bounce 3s;
+    align-items: center;
+    backdrop-filter: blur(4px);
+    background-color: rgba(255, 247, 237, 0.95);
     border-radius: 0.5rem;
+    left: 0.5rem;
+    color: black;
+    display: flex;
+    justify-content: center;
+    padding-top: 0.3rem;
+    position: absolute;
+    box-shadow: rgba(108, 117, 125, 0.34) 2px 2px 2px;
+    width: 95%;
+    height: 1.5rem;
+    z-index: 3;
 }

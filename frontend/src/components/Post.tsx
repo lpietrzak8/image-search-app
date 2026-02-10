@@ -1,7 +1,7 @@
 import {Link} from "react-router-dom";
 import { FiFlag } from "react-icons/fi";
 import axios from "axios";
-import { useState } from "react";
+import {useEffect, useState} from "react";
 import "./Post.css";
 
 type AuthorProps = {
@@ -9,26 +9,33 @@ type AuthorProps = {
     url: string;
 }
 
-type PostProps = {
+type imageProps = {
     id: string;
     author: AuthorProps;
     description: string;
     keywords: string[];
-    imageUrl: string;
-    sourceUrl: string;
+    image_url: string;
+    source_url: string;
     provider: string;
+}
+
+type PostProps = {
+    img: imageProps;
     onClose: () => void;
+    isLoggedIn: boolean;
+    savedPhotos: Set<string>;
+    savingPhoto: string | null;
+    handleSavePhoto: (img: object) => void;
 }
 
 
 const Post = ({
-    author,
-    description,
-    keywords,
-    imageUrl,
-    sourceUrl,
-    provider,
+    img,
     onClose,
+    isLoggedIn,
+    savedPhotos,
+    savingPhoto,
+    handleSavePhoto,
               } : PostProps)=> {
 
     const [isSuspended, setIsSuspended] = useState<boolean>(false);
@@ -38,8 +45,8 @@ const Post = ({
     const suspendPost = () => {
         axios
             .post("/api/blacklist/suspend", {
-            source_url: sourceUrl,
-            provider: provider,
+            source_url: img.source_url,
+            provider: img.provider,
             reason: null
         })
             .then(_ => {
@@ -53,18 +60,45 @@ const Post = ({
             .finally(() => {
                 setTimeout(() => {
                     setSuspendMessage(null);
-                }, 4000)
+                }, 3000)
             })
     }
+
+    useEffect(() => {
+        document.body.classList.add("modal-open");
+        return () => {
+            document.body.classList.remove("modal-open");
+        }
+    }, [])
 
     return (
         <div className={"modal-overlay"} onClick={onClose}>
             <div className={"postContainer"} onClick={(e) => e.stopPropagation()}>
-                {suspendMessage && (
-                    <div className={"suspendMessage"}>{suspendMessage}</div>
-                )}
                 <div className={"photoContainer"}>
-                    <img src={imageUrl} alt={description || "Could not load the photo"} />
+                    {suspendMessage && (
+                        <div className={"suspendMessage"}>{suspendMessage}</div>
+                    )}
+                    <img src={img.image_url} alt={img.description || "Could not load the photo"} />
+                    <div className={"saveButtonsContainer"}>
+                        <a
+                            className="download-btn"
+                            href={img.image_url}
+                            download
+                            title="Download image"
+                        >
+                            ⬇
+                        </a>
+                        {isLoggedIn && (
+                            <button
+                                className={`save-btn ${savedPhotos.has(img.image_url) ? "saved" : ""}`}
+                                onClick={() => handleSavePhoto(img)}
+                                disabled={savingPhoto === img.image_url || savedPhotos.has(img.image_url)}
+                                title={savedPhotos.has(img.image_url) ? "Saved" : "Save to My Resources"}
+                            >
+                                {savedPhotos.has(img.image_url) ? "✓" : "+"}
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <div className={"propertiesContainer"}>
                     <div className={"buttonsContainer"}>
@@ -75,18 +109,21 @@ const Post = ({
                     </div>
                     <ul className={"propertiesList"}>
                         <li className={"propertiesItem"}>
-                            Picture by {author.name} on <Link to={author.url}>{provider}</Link>
+                            Picture by {img.author.name} on{" "}
+                            <Link to={img.author.url} >{img.provider}</Link>
                         </li>
                         <li className={"propertiesItem"}>
-                            <div className={"itemName"}>Keywords:</div>
+                            <div className={"propertyName"}>Keywords:</div>
                             <ul className={"keywordsList"}>
-                                {keywords.map((keyword, index) => <li key={index}>{keyword}</li>)}
+                                {img.keywords.map((keyword, index) => <li key={index}>{keyword}</li>)}
                             </ul>
                         </li>
                         <li className={"propertiesItem"}>
-                            <div className={"itemName"}>Source:</div> <Link to={sourceUrl}>{sourceUrl}</Link>
+                            <div className={"propertyName"}>Source:</div> <Link to={img.source_url}>{img.source_url}</Link>
                         </li>
-                        <li className={"propertiesItem"}><div className={"itemName"}>Description:</div> {description}</li>
+                        {img.description && (
+                            <li className={"propertiesItem"}><div className={"propertyName"}>Description:</div> {img.description}</li>
+                        )}
                     </ul>
                 </div>
             </div>

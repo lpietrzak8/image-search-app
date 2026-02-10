@@ -4,9 +4,7 @@ from flask_cors import CORS
 from flask_healthz import healthz, HealthError
 import json
 from werkzeug.utils import secure_filename
-from db_connector import db, Post, Keyword, BlacklistedImage, UserSavedPhoto
-import requests as http_requests
-from functools import wraps
+from db_connector import db, Post, Keyword, BlacklistedImage
 from config import get_secret, build_posts_array, UPLOAD_FOLDER, verify_recaptcha, allowed_file
 from API_providers import API_PROVIDERS
 from searcher import Searcher
@@ -66,42 +64,6 @@ with app.app_context():
     db.create_all()
 
 searcher = Searcher(API_PROVIDERS)
-
-# Keycloak configuration
-KEYCLOAK_URL = os.environ.get('KEYCLOAK_URL', 'http://keycloak:8080')
-KEYCLOAK_REALM = os.environ.get('KEYCLOAK_REALM', 'photo-search')
-
-def verify_keycloak_token(token):
-    """Verify Keycloak token and return user info."""
-    try:
-        userinfo_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/userinfo"
-        headers = {'Authorization': f'Bearer {token}'}
-        response = http_requests.get(userinfo_url, headers=headers, timeout=5)
-        if response.status_code == 200:
-            return response.json()
-        return None
-    except Exception as e:
-        logging.error(f"Keycloak verification error: {str(e)}")
-        return None
-
-def require_auth(f):
-    """Decorator to require authentication."""
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth_header = request.headers.get('Authorization', '')
-        if not auth_header.startswith('Bearer '):
-            return jsonify({"error": "Missing or invalid authorization header"}), 401
-
-        token = auth_header.split(' ')[1]
-        user_info = verify_keycloak_token(token)
-
-        if not user_info:
-            return jsonify({"error": "Invalid or expired token"}), 401
-
-        g.user_id = user_info.get('sub')
-        g.user_info = user_info
-        return f(*args, **kwargs)
-    return decorated
 
 @app.route("/api/search", methods=['GET'])
 def get_images():
@@ -290,7 +252,7 @@ def contribute_image():
         logging.error(f"Contribution error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route("/blacklist/suspend", methods=['POST'])
+@app.route("/api/blacklist/suspend", methods=['POST'])
 def suspend_image():
     data = request.get_json()
 
@@ -306,7 +268,7 @@ def suspend_image():
 
     return jsonify({"message": "Post suspended"}), 201
 
-@app.route("/blacklist/suspended", methods=['GET'])
+@app.route("/api/blacklist/suspended", methods=['GET'])
 def list_suspended():
     images = BlacklistedImage.query.filter_by(status="suspended").all()
     
@@ -320,7 +282,7 @@ def list_suspended():
         for img in images
     ])
 
-@app.route("/blacklist/blocked", methods=['GET'])
+@app.route("/api/blacklist/blocked", methods=['GET'])
 def list_blocked():
     images = BlacklistedImage.query.filter_by(status="blocked").all()
     
@@ -334,7 +296,7 @@ def list_blocked():
         for img in images
     ])
 
-@app.route("/blacklist/block/<int:image_id>", methods=['PATCH'])
+@app.route("/api/blacklist/block/<int:image_id>", methods=['PATCH'])
 def block_image(image_id):
     img = BlacklistedImage.query.get_or_404(image_id)
     img.status = "blocked"
@@ -342,71 +304,13 @@ def block_image(image_id):
 
     return jsonify({"message": "Image blocked"})
 
-@app.route("/blacklist/<int:image_id>", methods=['DELETE'])
+@app.route("/api/blacklist/<int:image_id>", methods=['DELETE'])
 def remove_from_blacklist(image_id):
     img = BlacklistedImage.query.get_or_404(image_id)
     db.session.delete(img)
     db.session.commit()
 
     return jsonify({"message": "Image removed from blacklist"})
-
-@app.route('/api/user/photos', methods=['GET'])
-@require_auth
-def get_user_photos():
-    """Get all saved photos for the authenticated user."""
-    photos = UserSavedPhoto.query.filter_by(user_id=g.user_id).order_by(UserSavedPhoto.created_at.desc()).all()
-    return jsonify([
-        {
-            "id": photo.id,
-            "image_url": photo.image_url,
-            "description": photo.description,
-            "provider": photo.provider,
-            "created_at": photo.created_at.isoformat() if photo.created_at else None
-        }
-        for photo in photos
-    ])
-
-@app.route('/api/user/photos', methods=['POST'])
-@require_auth
-def save_user_photo():
-    """Save a photo to the user's account."""
-    data = request.get_json()
-
-    if not data or not data.get('image_url'):
-        return jsonify({"error": "image_url is required"}), 400
-
-    existing = UserSavedPhoto.query.filter_by(
-        user_id=g.user_id,
-        image_url=data['image_url']
-    ).first()
-
-    if existing:
-        return jsonify({"error": "Photo already saved"}), 409
-
-    photo = UserSavedPhoto(
-        user_id=g.user_id,
-        image_url=data['image_url'],
-        description=data.get('description'),
-        provider=data.get('provider')
-    )
-    db.session.add(photo)
-    db.session.commit()
-
-    return jsonify({"message": "Photo saved", "id": photo.id}), 201
-
-@app.route('/api/user/photos/<int:photo_id>', methods=['DELETE'])
-@require_auth
-def delete_user_photo(photo_id):
-    """Remove a photo from the user's account."""
-    photo = UserSavedPhoto.query.filter_by(id=photo_id, user_id=g.user_id).first()
-
-    if not photo:
-        return jsonify({"error": "Photo not found"}), 404
-
-    db.session.delete(photo)
-    db.session.commit()
-
-    return jsonify({"message": "Photo removed"})
 
 @app.route('/health', methods=['GET'])
 def healthcheck():
