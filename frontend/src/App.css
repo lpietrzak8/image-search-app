@@ -3,6 +3,7 @@ body {
   margin: 0;
   font-family: "Times New Roman", Times, serif;
   color: #f8fafc;
+  overflow-x: hidden;
 }
 
 .App {

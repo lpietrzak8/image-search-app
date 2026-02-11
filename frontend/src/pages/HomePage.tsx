@@ -21,6 +21,7 @@ function HomePage({ isLoggedIn }: HomePageProps) {
   const [savedPhotos, setSavedPhotos] = useState<Set<string>>(new Set());
   const [savingPhoto, setSavingPhoto] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
+  const [progress, setProgress] = useState<number | null>(null);
 
   useEffect(() => {
     if (inputRef.current) {
@@ -70,31 +71,50 @@ function HomePage({ isLoggedIn }: HomePageProps) {
     }
   };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     const trimmedQuery = query.trim();
     if (!trimmedQuery) return;
 
     setQuery("");
-
+    setProgress(0);
     setLoading(true);
     setSearched(true);
 
-    axios
-      .get(backendUrl, {
+    try {
+      const response = await axios.get(backendUrl, {
         params: {
-          s_query: trimmedQuery,
-          k: numberOfResults,
-        },
-      })
-      .then((response) => {
-        const data = response.data;
-        setResults(data);
-      })
-      .catch((error) => {
-        console.error(`Search error: ${error}`);
-        setResults([]);
-      })
-      .finally(() => setLoading(false));
+              s_query: trimmedQuery,
+              k: numberOfResults,
+            },
+          });
+
+      const { job_id } = response.data;
+
+      const es = new EventSource(`/api/search/stream/${job_id}`);
+
+      es.addEventListener("progress", (e) => {
+        const payload = JSON.parse(e.data)
+        setProgress(payload.percent)
+      });
+
+      es.addEventListener("done", (e) => {
+        const payload = JSON.parse(e.data)
+        setResults(payload)
+        setLoading(false);
+        setProgress(null);
+        es.close()
+      });
+
+      es.addEventListener("error", (e) => {
+        console.error("SSE error", e);
+        setLoading(false);
+        es.close();
+      });
+    } catch (error) {
+      console.error("Search error:", error);
+      setLoading(false);
+      setResults([]);
+    }
 
     resultsRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -136,7 +156,7 @@ function HomePage({ isLoggedIn }: HomePageProps) {
         {loading && (
           <div className="loader-container">
             <div className="loader"></div>
-            <p>Loading results...</p>
+            <p>Loading results... {progress}%</p>
           </div>
         )}
 
