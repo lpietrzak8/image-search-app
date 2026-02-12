@@ -62,6 +62,9 @@ async def compute_similarity(req: SimilarityRequest):
     try:
         images = [load_image(img) for img in req.images]
 
+        if not images:
+            return SimilarityResponse(indices=[], scores=[])
+        
         text_emb = clip_model.compute_text_embedding(req.query)
         # start = time.time()
         img_embs = torch.cat([get_or_create_embedding(img, clip_model) for img in images])
@@ -73,7 +76,9 @@ async def compute_similarity(req: SimilarityRequest):
         similarities = (img_embs @ text_emb.T).squeeze(1)
         scores = similarities.tolist()
 
-        top_indices = torch.topk(similarities, top_k).indices.tolist()
+        k = min(req.top_k, similarities.shape[0])
+        
+        top_indices = torch.topk(similarities, k).indices.tolist()
         top_scores = [scores[i] for i in top_indices]
 
         return SimilarityResponse(indices=top_indices, scores=top_scores)

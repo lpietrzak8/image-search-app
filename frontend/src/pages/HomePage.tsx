@@ -1,10 +1,21 @@
 import { useRef, useEffect, useState } from "react";
 import axios from "axios";
+import keycloak from "../keycloak";
+import Post from "../components/Post";
 
 const backendUrl = "/api/search";
 const numberOfResults = 30;
 
-function HomePage() {
+interface HomePageProps {
+  isLoggedIn: boolean;
+}
+
+interface searchStatus {
+  percent: number;
+  status: string;
+}
+
+function HomePage({ isLoggedIn }: HomePageProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
 
@@ -12,6 +23,10 @@ function HomePage() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [savedPhotos, setSavedPhotos] = useState<Set<string>>(new Set());
+  const [savingPhoto, setSavingPhoto] = useState<string | null>(null);
+  const [selectedPost, setSelectedPost] = useState<any | null>(null);
+  const [progress, setProgress] = useState<searchStatus | null>(null);
 
   useEffect(() => {
     if (inputRef.current) {
@@ -19,31 +34,92 @@ function HomePage() {
     }
   }, []);
 
-  const handleSearch = () => {
+  useEffect(() => {
+    if (isLoggedIn && keycloak.token) {
+      axios
+        .get("/api/user/photos", {
+          headers: { Authorization: `Bearer ${keycloak.token}` },
+        })
+        .then((response) => {
+          const urls = new Set(response.data.map((p: any) => p.image_url));
+          setSavedPhotos(urls as Set<string>);
+        })
+        .catch((err) => console.error("Failed to load saved photos:", err));
+    }
+  }, [isLoggedIn]);
+
+  const handleSavePhoto = async (img: any) => {
+    if (!keycloak.token) return;
+
+    setSavingPhoto(img.image_url);
+    try {
+      await axios.post(
+        "/api/user/photos",
+        {
+          image_url: img.image_url,
+          description: img.description,
+          provider: img.provider,
+        },
+        {
+          headers: { Authorization: `Bearer ${keycloak.token}` },
+        }
+      );
+      setSavedPhotos((prev) => new Set(prev).add(img.image_url));
+    } catch (err: any) {
+      if (err.response?.status === 409) {
+        setSavedPhotos((prev) => new Set(prev).add(img.image_url));
+      } else {
+        console.error("Failed to save photo:", err);
+      }
+    } finally {
+      setSavingPhoto(null);
+    }
+  };
+
+  const handleSearch = async () => {
     const trimmedQuery = query.trim();
     if (!trimmedQuery) return;
 
     setQuery("");
-
+    setProgress({percent: 0, status: "started"});
     setLoading(true);
     setSearched(true);
 
-    axios
-      .get(backendUrl, {
+    try {
+      const response = await axios.get(backendUrl, {
         params: {
-          s_query: trimmedQuery,
-          k: numberOfResults,
-        },
-      })
-      .then((response) => {
-        const data = response.data;
-        setResults(data);
-      })
-      .catch((error) => {
-        console.error(`Search error: ${error}`);
-        setResults([]);
-      })
-      .finally(() => setLoading(false));
+              s_query: trimmedQuery,
+              k: numberOfResults,
+            },
+          });
+
+      const { job_id } = response.data;
+
+      const es = new EventSource(`/api/search/stream/${job_id}`);
+
+      es.addEventListener("progress", (e) => {
+        const payload = JSON.parse(e.data)
+        setProgress({percent:payload.percent, status: payload.tag})
+      });
+
+      es.addEventListener("done", (e) => {
+        const payload = JSON.parse(e.data)
+        setResults(payload)
+        setLoading(false);
+        setProgress(null);
+        es.close()
+      });
+
+      es.addEventListener("error", (e) => {
+        console.error("SSE error", e);
+        setLoading(false);
+        es.close();
+      });
+    } catch (error) {
+      console.error("Search error:", error);
+      setLoading(false);
+      setResults([]);
+    }
 
     resultsRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -57,7 +133,7 @@ function HomePage() {
 
   return (
     <>
-      <main className="main-content">
+        <main className="main-content">
         <div className="search-container">
           <h1>
             Simply describe what you're looking for and search for your perfect
@@ -85,7 +161,8 @@ function HomePage() {
         {loading && (
           <div className="loader-container">
             <div className="loader"></div>
-            <p>Loading results...</p>
+            <p>Loading results... {progress && (progress.percent)}%</p>
+            {progress && (<p>Searching for tag: {progress.status}</p>)}
           </div>
         )}
 
@@ -96,16 +173,46 @@ function HomePage() {
         {!loading && !searched && results.length === 0 && (
           <p>Nothing to display yet</p>
         )}
-
         <div className={"results-grid"}>
           {[...results].map((img) => (
-            <img
-              key={img.id}
-              src={img.image_url}
-              alt={img.description || "photo"}
-            />
+            <div key={img.id} className="image-card">
+              <img
+                src={img.image_url}
+                alt={img.description || "photo"}
+                onClick={() => setSelectedPost(img)}
+
+              />
+              <a
+                className="download-btn"
+                href={img.image_url}
+                download
+                title="Download image"
+              >
+                ⬇
+              </a>
+              {isLoggedIn && (
+                <button
+                  className={`save-btn ${savedPhotos.has(img.image_url) ? "saved" : ""}`}
+                  onClick={() => handleSavePhoto(img)}
+                  disabled={savingPhoto === img.image_url || savedPhotos.has(img.image_url)}
+                  title={savedPhotos.has(img.image_url) ? "Saved" : "Save to My Resources"}
+                >
+                  {savedPhotos.has(img.image_url) ? "✓" : "+"}
+                </button>
+              )}
+            </div>
           ))}
         </div>
+          {selectedPost && (
+              <Post
+                  img={selectedPost}
+                  onClose={() => setSelectedPost(null)}
+                  isLoggedIn={isLoggedIn}
+                  savedPhotos={savedPhotos}
+                  savingPhoto={savingPhoto}
+                  handleSavePhoto={handleSavePhoto}
+              />
+          )}
       </section>
     </>
   );

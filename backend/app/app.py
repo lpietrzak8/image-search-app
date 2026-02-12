@@ -1,11 +1,12 @@
 import os
-from flask import Flask, request, jsonify, g, send_from_directory
+from flask import Flask, request, jsonify, g, send_from_directory, stream_with_context, Response
 from flask_cors import CORS
 from flask_healthz import healthz, HealthError
 import json
 from werkzeug.utils import secure_filename
-from db_connector import db, Post, Keyword
+from db_connector import db, Post, Keyword, BlacklistedImage
 from config import get_secret, build_posts_array, UPLOAD_FOLDER, verify_recaptcha, allowed_file
+from API_providers import API_PROVIDERS
 from searcher import Searcher
 from key_words import getKeyWords
 import time
@@ -13,6 +14,7 @@ import logging
 import uuid
 
 MAX_SEARCH = 30
+search_jobs = {}
 
 app = Flask(__name__)
 app.register_blueprint(healthz, url_prefix="/")
@@ -62,21 +64,51 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-searcher = Searcher()
+searcher = Searcher(API_PROVIDERS)
 
 @app.route("/api/search", methods=['GET'])
-def get_images():
+def start_search():
     query = request.args.get("s_query").lower()
+    top_k = int(request.args.get("k", 30))
+
+    job_id = str(uuid.uuid4())
+
+    search_jobs[job_id] = {
+        "query": query,
+        "top_k": top_k,
+        "status": "queued",
+        "result": None,
+    }
+
+    return jsonify({"job_id": job_id})
+
+def search_generator(job_id):
+    job = search_jobs[job_id]
+
+    query = job["query"].lower()
+    top_k = job["top_k"]
+
     keywords = getKeyWords(query)
-    top_k = int(request.args.get("k"))
 
     if not keywords:
-        return jsonify({"error_message": f"No results for '{query}'."}), 404
+        yield {"event": "error", "data": f"No results for '{query}"}
+        return
     
-    all_results = []
-
-    for tag in keywords:
         
+    all_results = []
+    total = len(keywords)
+    done = 0
+
+    for tag in keywords:         
+        yield {
+            "event": "progress",
+            "data": {
+                "current": done,
+                "total": total,
+                "percent": int(done / total * 100),
+                "tag": tag,
+            },
+        }
         top_images, top_scores = searcher.get_similar_images(
             tag, query, MAX_SEARCH, top_k
         )
@@ -84,12 +116,35 @@ def get_images():
         for image, score in zip(top_images, top_scores):
             all_results.append((image, score))
     
+        done += 1
+    
     all_results.sort(key = lambda x: x[1], reverse=True)
-
     final_results = all_results[:top_k]
-
     final_images = [item[0] for item in final_results]
-    return jsonify(final_images)
+    
+    job["result"] = final_images
+
+    yield {
+        "event": "done",
+        "data": final_images
+    }
+
+@app.get("/api/search/stream/<job_id>")
+def stream_search(job_id):
+
+    def event_stream():
+        for payload in search_generator(job_id):
+            yield f"event: {payload['event']}\n"
+            yield f"data: {json.dumps(payload['data'])}\n\n"
+    
+    return Response(
+        stream_with_context(event_stream()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        }
+    )
 
 @app.route('/api/createPost', methods=['POST'])
 def post_image():
@@ -250,6 +305,66 @@ def contribute_image():
     except Exception as e:
         logging.error(f"Contribution error: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
+
+@app.route("/api/blacklist/suspend", methods=['POST'])
+def suspend_image():
+    data = request.get_json()
+
+    entry = BlacklistedImage(
+        provider=data["provider"],
+        source_url=data["source_url"],
+        status="suspended",
+        reason=data.get("reason")
+    )
+
+    db.session.add(entry)
+    db.session.commit()
+
+    return jsonify({"message": "Post suspended"}), 201
+
+@app.route("/api/blacklist/suspended", methods=['GET'])
+def list_suspended():
+    images = BlacklistedImage.query.filter_by(status="suspended").all()
+    
+    return jsonify([
+        {
+            "id": img.id,
+            "provider": img.provider,
+            "source_url": img.source_url,
+            "reason": img.reason
+        }
+        for img in images
+    ])
+
+@app.route("/api/blacklist/blocked", methods=['GET'])
+def list_blocked():
+    images = BlacklistedImage.query.filter_by(status="blocked").all()
+    
+    return jsonify([
+        {
+            "id": img.id,
+            "provider": img.provider,
+            "source_url": img.source_url,
+            "reason": img.reason
+        }
+        for img in images
+    ])
+
+@app.route("/api/blacklist/block/<int:image_id>", methods=['PATCH'])
+def block_image(image_id):
+    img = BlacklistedImage.query.get_or_404(image_id)
+    img.status = "blocked"
+    db.session.commit()
+
+    return jsonify({"message": "Image blocked"})
+
+@app.route("/api/blacklist/<int:image_id>", methods=['DELETE'])
+def remove_from_blacklist(image_id):
+    img = BlacklistedImage.query.get_or_404(image_id)
+    db.session.delete(img)
+    db.session.commit()
+
+    return jsonify({"message": "Image removed from blacklist"})
 
 @app.route('/health', methods=['GET'])
 def healthcheck():
