@@ -100,6 +100,15 @@ def search_generator(job_id):
     done = 0
 
     for tag in keywords:         
+        yield {
+            "event": "progress",
+            "data": {
+                "current": done,
+                "total": total,
+                "percent": int(done / total * 100),
+                "tag": tag,
+            },
+        }
         top_images, top_scores = searcher.get_similar_images(
             tag, query, MAX_SEARCH, top_k
         )
@@ -108,14 +117,6 @@ def search_generator(job_id):
             all_results.append((image, score))
     
         done += 1
-        yield {
-            "event": "progress",
-            "data": {
-                "current": done,
-                "total": total,
-                "percent": int(done / total * 100),
-            },
-        }
     
     all_results.sort(key = lambda x: x[1], reverse=True)
     final_results = all_results[:top_k]

@@ -10,6 +10,11 @@ interface HomePageProps {
   isLoggedIn: boolean;
 }
 
+interface searchStatus {
+  percent: number;
+  status: string;
+}
+
 function HomePage({ isLoggedIn }: HomePageProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
@@ -21,7 +26,7 @@ function HomePage({ isLoggedIn }: HomePageProps) {
   const [savedPhotos, setSavedPhotos] = useState<Set<string>>(new Set());
   const [savingPhoto, setSavingPhoto] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<any | null>(null);
-  const [progress, setProgress] = useState<number | null>(null);
+  const [progress, setProgress] = useState<searchStatus | null>(null);
 
   useEffect(() => {
     if (inputRef.current) {
@@ -76,7 +81,7 @@ function HomePage({ isLoggedIn }: HomePageProps) {
     if (!trimmedQuery) return;
 
     setQuery("");
-    setProgress(0);
+    setProgress({percent: 0, status: "started"});
     setLoading(true);
     setSearched(true);
 
@@ -94,7 +99,7 @@ function HomePage({ isLoggedIn }: HomePageProps) {
 
       es.addEventListener("progress", (e) => {
         const payload = JSON.parse(e.data)
-        setProgress(payload.percent)
+        setProgress({percent:payload.percent, status: payload.tag})
       });
 
       es.addEventListener("done", (e) => {
@@ -156,7 +161,8 @@ function HomePage({ isLoggedIn }: HomePageProps) {
         {loading && (
           <div className="loader-container">
             <div className="loader"></div>
-            <p>Loading results... {progress}%</p>
+            <p>Loading results... {progress && (progress.percent)}%</p>
+            {progress && (<p>Searching for tag: {progress.status}</p>)}
           </div>
         )}
 
