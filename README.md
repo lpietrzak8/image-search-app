@@ -2,7 +2,11 @@
 
 Semantic image search using CLIP embeddings.
 
+<<<<<<< HEAD
 ## Developed by
+=======
+## Created by
+>>>>>>> 556b523 (Added initial version of README file)
 
 - Franciszek Frycz
 - Łukasz Pietrzak
