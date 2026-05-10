@@ -12,6 +12,7 @@ import "./App.css";
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [keycloakInitialized, setKeycloakInitialized] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<any | null>(null);
 
   useEffect(() => {
     keycloak
@@ -44,7 +45,7 @@ function App() {
     <div className="App">
       <Navbar isLoggedIn={isLoggedIn} />
       <Routes>
-        <Route path="/" element={<HomePage isLoggedIn={isLoggedIn} />} />
+        <Route path="/" element={<HomePage isLoggedIn={isLoggedIn} selectedPost={selectedPost} setSelectedPost={setSelectedPost} />} />
         <Route
           path="/login"
           element={<LogInPage setIsLoggedIn={setIsLoggedIn} />}
@@ -52,7 +53,7 @@ function App() {
         <Route path="/mission" element={<MissionPage />} />
         <Route
           path="/my-account"
-          element={<MyAccountPage setIsLoggedIn={setIsLoggedIn} />}
+          element={<MyAccountPage setIsLoggedIn={setIsLoggedIn} selectedPost={selectedPost} setSelectedPost={setSelectedPost} />}
         />
         <Route path="/contribute" element={<ContributePage />} />
       </Routes>

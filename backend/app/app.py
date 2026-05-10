@@ -4,11 +4,12 @@ from flask_cors import CORS
 from flask_healthz import healthz, HealthError
 import json
 from werkzeug.utils import secure_filename
-from db_connector import db, Post, Keyword, BlacklistedImage
+from db_connector import db, Post, Keyword, BlacklistedImage, UserSavedPhoto
 from config import get_secret, build_posts_array, UPLOAD_FOLDER, verify_recaptcha, allowed_file
 from API_providers import API_PROVIDERS
 from searcher import Searcher
 from key_words import getKeyWords
+from keycloak_config import *
 import time
 import logging
 import uuid
@@ -365,6 +366,64 @@ def remove_from_blacklist(image_id):
     db.session.commit()
 
     return jsonify({"message": "Image removed from blacklist"})
+
+@app.route('/api/user/photos', methods=['GET'])
+@require_auth
+def get_user_photos():
+    """Get all saved photos for the authenticated user."""
+    photos = UserSavedPhoto.query.filter_by(user_id=g.user_id).order_by(UserSavedPhoto.created_at.desc()).all()
+    return jsonify([
+        {
+            "id": photo.id,
+            "image_url": photo.image_url,
+            "description": photo.description,
+            "provider": photo.provider,
+            "created_at": photo.created_at.isoformat() if photo.created_at else None
+        }
+        for photo in photos
+    ])
+
+@app.route('/api/user/photos', methods=['POST'])
+@require_auth
+def save_user_photo():
+    """Save a photo to the user's account."""
+    data = request.get_json()
+
+    if not data or not data.get('image_url'):
+        return jsonify({"error": "image_url is required"}), 400
+
+    existing = UserSavedPhoto.query.filter_by(
+        user_id=g.user_id,
+        image_url=data['image_url']
+    ).first()
+
+    if existing:
+        return jsonify({"error": "Photo already saved"}), 409
+
+    photo = UserSavedPhoto(
+        user_id=g.user_id,
+        image_url=data['image_url'],
+        description=data.get('description'),
+        provider=data.get('provider')
+    )
+    db.session.add(photo)
+    db.session.commit()
+
+    return jsonify({"message": "Photo saved", "id": photo.id}), 201
+
+@app.route('/api/user/photos/<int:photo_id>', methods=['DELETE'])
+@require_auth
+def delete_user_photo(photo_id):
+    """Remove a photo from the user's account."""
+    photo = UserSavedPhoto.query.filter_by(id=photo_id, user_id=g.user_id).first()
+
+    if not photo:
+        return jsonify({"error": "Photo not found"}), 404
+
+    db.session.delete(photo)
+    db.session.commit()
+
+    return jsonify({"message": "Photo removed"})
 
 @app.route('/health', methods=['GET'])
 def healthcheck():

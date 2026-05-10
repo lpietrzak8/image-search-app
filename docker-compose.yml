@@ -2,8 +2,8 @@ version: "3.8"
 
 services:
   frontend:
-    image: ffrycz/image_search_app-frontend:latest
-    # build: frontend
+    # image: ffrycz/image_search_app-frontend:latest
+    build: frontend
     container_name: frontend
     ports:
       - "3000:80"
@@ -14,8 +14,8 @@ services:
       - app-network
 
   backend:
-    image: ffrycz/image_search_app-backend:latest
-    # build: ./backend
+    # image: ffrycz/image_search_app-backend:latest
+    build: ./backend
     container_name: flask-backend
     environment:
       MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
@@ -31,9 +31,11 @@ services:
       - app-network
       - redis-network
       - database-network
+      - keycloak-network
     depends_on:
       - clip
       - database
+      - keycloak
     volumes:
       - shared_images:/app/uploads
     healthcheck:
@@ -108,6 +110,7 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HTTP_RELATIVE_PATH: /
+      KC_HOSTNAME: localhost
       KC_HOSTNAME_STRICT: false
       KC_HOSTNAME_STRICT_HTTPS: false
     ports:
