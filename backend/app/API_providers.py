@@ -58,6 +58,9 @@ class PixabayProvider(APIProvider):
 
         logging.info(f"Fetching up to {num_images} images for keyword '{keyword}' from Pixabay.")
 
+        clip_paths = []
+        posts_json = []
+
         try:
             response = requests.get(
                 self.PIXABAY_ORIGINAL_API,
@@ -71,9 +74,6 @@ class PixabayProvider(APIProvider):
             
             response.raise_for_status()
             output = response.json()
-
-            clip_paths = []
-            posts_json = []
 
             for hit in output.get("hits", []):
                 if looks_like_ai(hit):
