@@ -4,6 +4,7 @@ import type { Dispatch, SetStateAction } from "react";
 import axios from "axios";
 import keycloak from "../keycloak";
 import "./MyAccountPage.css";
+import Post from "../components/Post.tsx";
 
 interface SavedPhoto {
   id: number;
@@ -15,9 +16,11 @@ interface SavedPhoto {
 
 interface MyAccountPageProps {
   setIsLoggedIn: Dispatch<SetStateAction<boolean>>;
+  selectedPost: any;
+  setSelectedPost: any;
 }
 
-const MyAccountPage = ({ setIsLoggedIn }: MyAccountPageProps) => {
+const MyAccountPage = ({ setIsLoggedIn, selectedPost, setSelectedPost }: MyAccountPageProps) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("resources");
   const [savedPhotos, setSavedPhotos] = useState<SavedPhoto[]>([]);
@@ -47,20 +50,22 @@ const MyAccountPage = ({ setIsLoggedIn }: MyAccountPageProps) => {
     }
   }, []);
 
-  const handleDeletePhoto = async (photoId: number) => {
+  const handleDeletePhoto = async (img: any) => {
     if (!keycloak.token) return;
 
+    const photoId: number = img.id;
+
     setDeletingId(photoId);
-    try {
-      await axios.delete(`/api/user/photos/${photoId}`, {
-        headers: { Authorization: `Bearer ${keycloak.token}` },
-      });
-      setSavedPhotos((prev) => prev.filter((p) => p.id !== photoId));
-    } catch (err) {
-      console.error("Failed to delete photo:", err);
-    } finally {
-      setDeletingId(null);
-    }
+    await axios.delete(`/api/user/photos/${photoId}`, {
+      headers: { Authorization: `Bearer ${keycloak.token}` },
+    })
+        .then(() => {
+          setSavedPhotos((prev) => prev.filter((p) => p.id !== photoId));
+        })
+        .catch((err) => {
+          console.error("Failed to delete photo:", err);
+        })
+        .finally(() =>setDeletingId(null));
   };
 
   const handleLogout = () => {
@@ -123,7 +128,11 @@ const MyAccountPage = ({ setIsLoggedIn }: MyAccountPageProps) => {
                 <div className="saved-photos-grid">
                   {savedPhotos.map((photo) => (
                     <div key={photo.id} className="saved-photo-card">
-                      <img src={photo.image_url} alt={photo.description || "Saved photo"} />
+                      <img
+                          src={photo.image_url}
+                          alt={photo.description || "Saved photo"}
+                          onClick={() => setSelectedPost(photo)}
+                      />
                       <button
                         className="remove-btn"
                         onClick={() => handleDeletePhoto(photo.id)}
@@ -143,6 +152,18 @@ const MyAccountPage = ({ setIsLoggedIn }: MyAccountPageProps) => {
                     </div>
                   ))}
                 </div>
+              )}
+              {selectedPost && (
+                  <Post
+                      img={selectedPost}
+                      onClose={() => setSelectedPost(null)}
+                      isLoggedIn={true}
+                      savedPhotos={new Set(...savedPhotos.map(savedPhoto => savedPhoto.image_url))}
+                      savingPhoto={null}
+                      handleSavePhoto={handleDeletePhoto}
+                      results={savedPhotos}
+                      setResults={setSavedPhotos}
+                  />
               )}
             </div>
           )}

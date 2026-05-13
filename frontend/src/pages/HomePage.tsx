@@ -57,6 +57,8 @@ function HomePage({ isLoggedIn, selectedPost, setSelectedPost }: HomePageProps) 
         "/api/user/photos",
         {
           image_url: img.image_url,
+          // author: img.author,
+          keywords: img.keywords,
           description: img.description,
           provider: img.provider,
         },
@@ -213,6 +215,8 @@ function HomePage({ isLoggedIn, selectedPost, setSelectedPost }: HomePageProps) 
                   savedPhotos={savedPhotos}
                   savingPhoto={savingPhoto}
                   handleSavePhoto={handleSavePhoto}
+                  results={results}
+                  setResults={setResults}
               />
           )}
       </section>
