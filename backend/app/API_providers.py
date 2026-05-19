@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 import re
 import uuid
 from requests.exceptions import HTTPError
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 AI_KEYWORDS = ["ai", "generated", "midjourney", "stable diffusion", "dall-e", "sora", "flux", "deepai"]
@@ -55,9 +56,9 @@ class PixabayProvider(APIProvider):
 
 
     def fetch(self, keyword, num_images, blocked_urls):
-
         logging.info(f"Fetching up to {num_images} images for keyword '{keyword}' from Pixabay.")
-
+        clip_paths = []
+        posts_json = []
         try:
             response = requests.get(
                 self.PIXABAY_ORIGINAL_API,
@@ -68,53 +69,52 @@ class PixabayProvider(APIProvider):
                     "per_page": num_images
                 },
                 timeout=10)
-            
             response.raise_for_status()
             output = response.json()
 
-            clip_paths = []
-            posts_json = []
+            hits = [
+                hit for hit in output.get("hits", [])
+                if not looks_like_ai(hit)
+                and hit.get("webformatURL")
+                and hit.get("pageURL") not in blocked_urls
+            ]
 
-            for hit in output.get("hits", []):
-                if looks_like_ai(hit):
-                    continue
-
+            def process_hit(hit):
                 image_url = hit.get("webformatURL")
-                author = hit.get("user")
+                try:
+                    local_path, filename = self.saveImage(image_url, keyword)
+                    clip_path = local_path.replace(UPLOAD_FOLDER, CLIP_MOUNT_PATH, 1)
+                    public_url = f"/api/uploads/pixabay/{filename}"
+                    return clip_path, {
+                        "id": f"pixabay-{hit.get('id')}",
+                        "author": {"name": hit.get("user"), "url": None},
+                        "description": None,
+                        "keywords": [keyword],
+                        "image_url": public_url,
+                        "source_url": hit.get("pageURL"),
+                        "provider": "pixabay"
+                    }
+                except Exception as e:
+                    logging.warning(f"Failed to fetch {image_url}: {e}")
+                    return None
 
-                if not image_url:
-                    continue
-                
-                source_url = hit.get("pageURL")
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures = [executor.submit(process_hit, hit) for hit in hits]
+                for future in as_completed(futures):
+                    result = future.result()
+                    if result:
+                        clip_path, post = result
+                        clip_paths.append(clip_path)
+                        posts_json.append(post)
 
-                if source_url in blocked_urls:
-                    continue
-
-                local_path, filename = self.saveImage(image_url, keyword)
-                
-                clip_path = local_path.replace(UPLOAD_FOLDER, CLIP_MOUNT_PATH, 1)
-                clip_paths.append(clip_path)
-
-                public_url = url_for("serve_image", filename=f"pixabay/{filename}")
-                
-                posts_json.append({
-                    "id": f"pixabay-{hit.get("id")}",
-                    "author": {
-                        "name": author,
-                        "url": None
-                    },
-                    "description": None,
-                    "keywords": [keyword],
-                    "image_url": public_url,
-                    "source_url": source_url,
-                    "provider": "pixabay"})
-        except  HTTPError as e:
-            logging.error(f"Failed to fetch from Pixabay. Error message: {e}")    
+        except HTTPError as e:
+            logging.error(f"Failed to fetch from Pixabay. Error message: {e}")
         except (requests.RequestException, OSError, UnidentifiedImageError) as e:
-            logging.warning(f"Failed to fetch {image_url}: {e}")
-        
+            logging.warning(f"Failed to fetch from Pixabay: {e}")
+
         logging.info(f"Fetched {len(posts_json)} images from Pixabay.")
         return clip_paths, posts_json
+
 
 class PexelsProvider(APIProvider):
     PEXELS_URL = "https://api.pexels.com/v1/search"
@@ -194,66 +194,64 @@ class UnsplashProvider(APIProvider):
             "Accept-Version": "v1"
             }
     
-
     def fetch(self, keyword, num_images, blocked_urls):
         clip_paths = []
         posts_json = []
-
         logging.info(f"Fetching up to {num_images} images for keyword '{keyword}' from Unsplash.")
-
         try:
             response = requests.get(
-                self.UNSPLASH_API, 
+                self.UNSPLASH_API,
                 headers=self.HEADERS,
                 params={
                     "query": keyword.lower(),
                     "per_page": min(num_images, 10)
                 },
                 timeout=10)
-            
             response.raise_for_status()
             output = response.json()
 
-            for result in output.get("results", []):
+            results = [
+                result for result in output.get("results", [])
+                if result.get("urls", {}).get("regular")
+                and result.get("links", {}).get("html") not in blocked_urls
+            ]
+
+            def process_result(result):
                 image_url = result["urls"]["regular"]
-                
-                if not image_url:
-                    continue
+                try:
+                    local_path, filename = self.saveImage(image_url, keyword)
+                    clip_path = local_path.replace(UPLOAD_FOLDER, CLIP_MOUNT_PATH, 1)
+                    public_url = f"/api/uploads/unsplash/{filename}"
+                    return clip_path, {
+                        "id": f"unsplash-{result.get('id')}",
+                        "author": {
+                            "name": result["user"]["name"],
+                            "url": result["user"]["links"]["html"]
+                        },
+                        "description": result.get("description"),
+                        "keywords": [keyword],
+                        "image_url": public_url,
+                        "source_url": result.get("links", {}).get("html"),
+                        "provider": "unsplash"
+                    }
+                except Exception as e:
+                    logging.warning(f"Failed to fetch {image_url}: {e}")
+                    return None
 
-                source_url = result.get("links").get("html")
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures = [executor.submit(process_result, result) for result in results]
+                for future in as_completed(futures):
+                    result = future.result()
+                    if result:
+                        clip_path, post = result
+                        clip_paths.append(clip_path)
+                        posts_json.append(post)
 
-                if source_url in blocked_urls:
-                    continue
-
-                requests.get(
-                    result["links"]["download"],
-                    headers=self.HEADERS,
-                    timeout=5
-                )
-
-                local_path, filename = self.saveImage(image_url, keyword)
-                
-                clip_path = local_path.replace(UPLOAD_FOLDER, CLIP_MOUNT_PATH, 1)
-                clip_paths.append(clip_path)
-
-                public_url = url_for("serve_image", filename=f"unsplash/{filename}")
-                
-                posts_json.append({
-                    "id": f"unsplash-{result.get("id")}",
-                    "author": {
-                        "name": result["user"]["name"],
-                        "url": result["user"]["links"]["html"]
-                    },
-                    "description": result.get("description"),
-                    "keywords": [keyword],
-                    "image_url": public_url,
-                    "source_url": source_url,
-                    "provider": "unsplash"})
-        except  HTTPError as e:
+        except HTTPError as e:
             logging.error(f"Failed to fetch from Unsplash API. Error message: {e}")
         except (requests.RequestException, OSError, UnidentifiedImageError) as e:
-            logging.warning(f"Failed to fetch {image_url}: {e}")
-        
+            logging.warning(f"Failed to fetch from Unsplash: {e}")
+
         logging.info(f"Fetched {len(posts_json)} images from Unsplash.")
         return clip_paths, posts_json
         

@@ -13,6 +13,16 @@ import time
 import logging
 import uuid
 
+
+from contextlib import contextmanager
+
+@contextmanager
+def timer(label):
+    start = time.perf_counter()
+    yield
+    elapsed = (time.perf_counter() - start) * 1000
+    print(f"[TIMER] {label}: {elapsed:.2f}ms", flush=True)
+
 MAX_SEARCH = 30
 search_jobs = {}
 
@@ -109,12 +119,14 @@ def search_generator(job_id):
                 "tag": tag,
             },
         }
-        top_images, top_scores = searcher.get_similar_images(
-            tag, query, MAX_SEARCH, top_k
-        )
 
-        for image, score in zip(top_images, top_scores):
-            all_results.append((image, score))
+        with timer(f"get_similar_images [{tag}]"):
+            result = searcher.get_similar_images(tag, query, MAX_SEARCH, top_k)
+
+        if result:
+            top_images, top_scores = result
+            for image, score in zip(top_images, top_scores):
+                all_results.append((image, score))
     
         done += 1
     
