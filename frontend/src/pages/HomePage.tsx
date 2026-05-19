@@ -56,11 +56,12 @@ function HomePage({ isLoggedIn, selectedPost, setSelectedPost }: HomePageProps) 
     await axios.post(
         "/api/user/photos",
         {
-          image_url: img.image_url,
-          // author: img.author,
-          keywords: img.keywords,
-          description: img.description,
           provider: img.provider,
+          author: img.author,
+          description: img.description,
+          image_url: img.image_url,
+          source_url: img.source_url,
+          keywords: img.keywords,
         },
         {
           headers: { Authorization: `Bearer ${keycloak.token}` },

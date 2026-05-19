@@ -7,8 +7,10 @@ import "./MyAccountPage.css";
 import Post from "../components/Post.tsx";
 
 interface SavedPhoto {
-  id: number;
+  id: string;
+  author: any;
   image_url: string;
+  source_url: string;
   description: string | null;
   provider: string | null;
   created_at: string | null;
@@ -25,7 +27,7 @@ const MyAccountPage = ({ setIsLoggedIn, selectedPost, setSelectedPost }: MyAccou
   const [activeTab, setActiveTab] = useState("resources");
   const [savedPhotos, setSavedPhotos] = useState<SavedPhoto[]>([]);
   const [loading, setLoading] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!keycloak.authenticated) {
@@ -53,7 +55,7 @@ const MyAccountPage = ({ setIsLoggedIn, selectedPost, setSelectedPost }: MyAccou
   const handleDeletePhoto = async (img: any) => {
     if (!keycloak.token) return;
 
-    const photoId: number = img.id;
+    const photoId: string = img.id;
 
     setDeletingId(photoId);
     await axios.delete(`/api/user/photos/${photoId}`, {
@@ -135,7 +137,7 @@ const MyAccountPage = ({ setIsLoggedIn, selectedPost, setSelectedPost }: MyAccou
                       />
                       <button
                         className="remove-btn"
-                        onClick={() => handleDeletePhoto(photo.id)}
+                        onClick={() => handleDeletePhoto(photo)}
                         disabled={deletingId === photo.id}
                         title="Remove from saved"
                       >

@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify, g, send_from_directory, stream_with_context, Response
+from flask import Flask, request, jsonify, g, send_from_directory, stream_with_context, Response, url_for
 from flask_cors import CORS
 from flask_healthz import healthz, HealthError
 import json
@@ -10,6 +10,8 @@ from API_providers import API_PROVIDERS
 from searcher import Searcher
 from key_words import getKeyWords
 from keycloak_config import *
+from services.blacklist_service import get_blocked_urls
+from sqlalchemy.orm import joinedload
 import time
 import logging
 import uuid
@@ -286,12 +288,16 @@ def contribute_image():
                 keyword = Keyword(name=kw)
             keyword_objects.append(keyword)
         
+        image_path = os.path.relpath(image_path, UPLOAD_FOLDER)
         # Create database entry
         new_post = Post(
-            author="contributor",
+            provider="PHOTO-SEARCH",
+            author_name="contributor",
+            author_url=None,
             description=description,
-            keywords=keyword_objects,
-            image_path=os.path.relpath(image_path, UPLOAD_FOLDER)
+            image_url=url_for("serve_image", filename=image_path),
+            source_url=url_for("serve_image", filename=image_path),
+            keywords=keyword_objects
         )
         db.session.add(new_post)
         db.session.commit()
@@ -371,17 +377,23 @@ def remove_from_blacklist(image_id):
 @require_auth
 def get_user_photos():
     """Get all saved photos for the authenticated user."""
-    photos = UserSavedPhoto.query.filter_by(user_id=g.user_id).order_by(UserSavedPhoto.created_at.desc()).all()
-    return jsonify([
-        {
-            "id": photo.id,
-            "image_url": photo.image_url,
-            "description": photo.description,
-            "provider": photo.provider,
-            "created_at": photo.created_at.isoformat() if photo.created_at else None
-        }
-        for photo in photos
-    ])
+    # photos = UserSavedPhoto.query.filter_by(user_id=g.user_id).order_by(UserSavedPhoto.created_at.desc()).all()
+    saved_relations = (
+        UserSavedPhoto.query
+        .options(joinedload(UserSavedPhoto.post))
+        .filter_by(user_id=g.user_id)
+        .order_by(UserSavedPhoto.created_at.desc())
+        .all()
+    )
+
+    photos = [rel.post for rel in saved_relations]
+    
+    blocked_urls = get_blocked_urls()
+    filtered_photos = filter(
+        lambda photo: photo.source_url not in blocked_urls,
+        photos)
+    
+    return build_posts_array(filtered_photos)
 
 @app.route('/api/user/photos', methods=['POST'])
 @require_auth
@@ -389,41 +401,87 @@ def save_user_photo():
     """Save a photo to the user's account."""
     data = request.get_json()
 
-    if not data or not data.get('image_url'):
-        return jsonify({"error": "image_url is required"}), 400
+    if not data or not data.get('source_url'):
+        return jsonify({"error": "source_url is required"}), 400
 
-    existing = UserSavedPhoto.query.filter_by(
-        user_id=g.user_id,
-        image_url=data['image_url']
+    post = Post.query.filter_by(
+        provider=data["provider"],
+        source_url=data['source_url']
     ).first()
 
-    if existing:
+    if not post:
+
+        post = Post(
+            provider = data["provider"],
+
+            author_name = data["author"]["name"],
+            author_url = data["author"]["url"],
+
+            description = data["description"] or "",
+
+            image_url = data["image_url"],
+            source_url = data["source_url"]
+        )
+
+        keyword_objects = []
+
+        for keyword_name in data.get("keywords", []):
+
+            keyword = Keyword.query.filter_by(
+                name=keyword_name
+            ).first()
+
+            if not keyword:
+                keyword = Keyword(name=keyword_name)
+                db.session.add(keyword)
+
+            keyword_objects.append(keyword)
+
+        post.keywords = keyword_objects
+
+        db.session.add(post)
+        db.session.flush()
+    
+    existing_saved = UserSavedPhoto.query.filter_by(
+        user_id=g.user_id,
+        post_id=post.id
+    ).first()
+
+    if existing_saved:
         return jsonify({"error": "Photo already saved"}), 409
 
-    photo = UserSavedPhoto(
+    saved_photo = UserSavedPhoto(
         user_id=g.user_id,
-        image_url=data['image_url'],
-        description=data.get('description'),
-        provider=data.get('provider')
+        post_id=post.id
     )
-    db.session.add(photo)
+
+    db.session.add(saved_photo)
     db.session.commit()
 
-    return jsonify({"message": "Photo saved", "id": photo.id}), 201
+    return jsonify({"message": "Photo saved", "id": post.id}), 201
 
-@app.route('/api/user/photos/<int:photo_id>', methods=['DELETE'])
+@app.route('/api/user/photos/<int:post_id>', methods=['DELETE'])
 @require_auth
-def delete_user_photo(photo_id):
+def delete_user_photo(post_id):
     """Remove a photo from the user's account."""
-    photo = UserSavedPhoto.query.filter_by(id=photo_id, user_id=g.user_id).first()
+    photo = UserSavedPhoto.query.filter_by(id=post_id, user_id=g.user_id).first()
 
     if not photo:
         return jsonify({"error": "Photo not found"}), 404
 
     db.session.delete(photo)
+
+    remaining = UserSavedPhoto.query.filter_by(post_id=post_id).count()
+
+    if remaining == 0:
+        post = Post.query.get(post_id)
+        if post and post.provider != "PHOTO-SEARCH":
+            db.session.delete(post)
+    
     db.session.commit()
 
-    return jsonify({"message": "Photo removed"})
+
+    return jsonify({"message": "Photo removed"}), 200
 
 @app.route('/health', methods=['GET'])
 def healthcheck():

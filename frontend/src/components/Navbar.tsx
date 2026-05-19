@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import {Link, NavLink} from "react-router-dom";
 import "./Navbar.css";
 
 interface NavbarProps {
@@ -20,7 +20,7 @@ const Navbar = ({ isLoggedIn }: NavbarProps) => {
   return (
     <>
       <header className="header">
-        <div className="logo">PHOTO-SEARCH</div>
+        <Link to={"/"}><div className="logo">PHOTO-SEARCH</div></Link>
 
         <button
           className={`hamburger ${isMenuOpen ? "active" : ""}`}
