@@ -32,12 +32,12 @@ class Searcher:
 
             if redis_client.exists(images_redis_key) and redis_client.exists(urls_redis_key):
                 keyword_images = redis_client.get(images_redis_key)
-                keyword_image_urls = redis_client.get(urls_redis_key)
+                keyword_image_objects = redis_client.get(urls_redis_key)
             else:
                 with timer(f"fetch_images_tag (redis miss) [{keyword}]"):
                     (keyword_images, keyword_image_urls) = fetch_images_tag(keyword, max_images, self.api_providers)
                 redis_client.set(images_redis_key, keyword_images)
-                redis_client.set(urls_redis_key, keyword_image_urls)
+                redis_client.set(urls_redis_key, keyword_image_objects)
         else:
             with timer(f"fetch_images_tag [{keyword}]"):
                 (keyword_images, keyword_image_objects) = fetch_images_tag(keyword, max_images, self.api_providers)

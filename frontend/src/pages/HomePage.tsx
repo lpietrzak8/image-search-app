@@ -8,6 +8,8 @@ const numberOfResults = 30;
 
 interface HomePageProps {
   isLoggedIn: boolean;
+  selectedPost: any;
+  setSelectedPost: any;
 }
 
 interface searchStatus {
@@ -15,7 +17,7 @@ interface searchStatus {
   status: string;
 }
 
-function HomePage({ isLoggedIn }: HomePageProps) {
+function HomePage({ isLoggedIn, selectedPost, setSelectedPost }: HomePageProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
 
@@ -25,7 +27,6 @@ function HomePage({ isLoggedIn }: HomePageProps) {
   const [searched, setSearched] = useState(false);
   const [savedPhotos, setSavedPhotos] = useState<Set<string>>(new Set());
   const [savingPhoto, setSavingPhoto] = useState<string | null>(null);
-  const [selectedPost, setSelectedPost] = useState<any | null>(null);
   const [progress, setProgress] = useState<searchStatus | null>(null);
 
   useEffect(() => {
@@ -52,28 +53,32 @@ function HomePage({ isLoggedIn }: HomePageProps) {
     if (!keycloak.token) return;
 
     setSavingPhoto(img.image_url);
-    try {
-      await axios.post(
+    await axios.post(
         "/api/user/photos",
         {
-          image_url: img.image_url,
-          description: img.description,
           provider: img.provider,
+          author: img.author,
+          description: img.description,
+          image_url: img.image_url,
+          source_url: img.source_url,
+          keywords: img.keywords,
         },
         {
           headers: { Authorization: `Bearer ${keycloak.token}` },
-        }
-      );
-      setSavedPhotos((prev) => new Set(prev).add(img.image_url));
-    } catch (err: any) {
-      if (err.response?.status === 409) {
-        setSavedPhotos((prev) => new Set(prev).add(img.image_url));
-      } else {
-        console.error("Failed to save photo:", err);
-      }
-    } finally {
-      setSavingPhoto(null);
-    }
+        })
+        .then(() => {
+          setSavedPhotos((prev) => new Set(prev).add(img.image_url));
+        })
+        .catch((err) => {
+          if (err.response?.status === 409) {
+            setSavedPhotos((prev) => new Set(prev).add(img.image_url));
+          } else {
+            console.error("Failed to save photo:", err);
+          }
+        })
+        .finally(() => {
+          setSavingPhoto(null);
+        });
   };
 
   const handleSearch = async () => {
@@ -211,6 +216,8 @@ function HomePage({ isLoggedIn }: HomePageProps) {
                   savedPhotos={savedPhotos}
                   savingPhoto={savingPhoto}
                   handleSavePhoto={handleSavePhoto}
+                  results={results}
+                  setResults={setResults}
               />
           )}
       </section>

@@ -26,6 +26,8 @@ type PostProps = {
     savedPhotos: Set<string>;
     savingPhoto: string | null;
     handleSavePhoto: (img: object) => void;
+    results: any[];
+    setResults: (results: any[]) => void;
 }
 
 
@@ -36,6 +38,8 @@ const Post = ({
     savedPhotos,
     savingPhoto,
     handleSavePhoto,
+    results,
+    setResults,
               } : PostProps)=> {
 
     const [isSuspended, setIsSuspended] = useState<boolean>(false);
@@ -52,6 +56,8 @@ const Post = ({
             .then(_ => {
                 setIsSuspended(true);
                 setSuspendMessage("Post suspended");
+                setResults(results.filter(photo => photo.id != img.id));
+
             })
             .catch(err => {
                 console.log(err);

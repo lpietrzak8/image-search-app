@@ -1,9 +1,14 @@
 CREATE TABLE IF NOT EXISTS posts (
     id INT NOT NULL AUTO_INCREMENT,
-    author VARCHAR(64) NOT NULL,
+    provider VARCHAR(64) NOT NULL,
+    author_name VARCHAR(64) NOT NULL,
+    author_url VARCHAR(512),
     description VARCHAR(512) NOT NULL,
-    image_path VARCHAR(512) NOT NULL,
+    image_url VARCHAR(512) NOT NULL,
+    source_url VARCHAR(512) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
+    UNIQUE KEY unique_photo (source_url(255))
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS keywords (
@@ -34,10 +39,12 @@ CREATE TABLE IF NOT EXISTS blacklisted_images (
 CREATE TABLE IF NOT EXISTS user_saved_photos (
     id INT NOT NULL AUTO_INCREMENT,
     user_id VARCHAR(255) NOT NULL,
-    image_url VARCHAR(512) NOT NULL,
-    description VARCHAR(512),
-    provider VARCHAR(64),
+    post_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    UNIQUE KEY unique_user_photo (user_id, image_url(255))
+    FOREIGN KEY (post_id)
+        REFERENCES posts(id)
+        ON DELETE CASCADE,
+    
+    UNIQUE KEY unique_user_photo (user_id, photo_id)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
