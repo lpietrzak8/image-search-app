@@ -10,7 +10,7 @@ from API_providers import API_PROVIDERS
 from searcher import Searcher
 from key_words import getKeyWords
 from keycloak_config import *
-from services.blacklist_service import get_blocked_urls
+from services.blacklist_service import get_blocked_and_suspended_urls
 from sqlalchemy.orm import joinedload
 import time
 import logging
@@ -197,11 +197,15 @@ def post_image():
         keyword_objects.append(keyword)
 
     new_post = Post(
-        author=author,
-        description=description,
-        keywords=keyword_objects,
-        image_path=relative_path,
-    )
+            provider="PHOTO-SEARCH",
+            author_name=author,
+            author_url=None,
+            description=description,
+            image_path=relative_path,
+            image_url=url_for("serve_image", filename=relative_path),
+            source_url=url_for("serve_image", filename=relative_path),
+            keywords=keyword_objects
+        )
     db.session.add(new_post)
     db.session.commit()
 
@@ -307,6 +311,7 @@ def contribute_image():
             author_name="contributor",
             author_url=None,
             description=description,
+            image_path=image_path,
             image_url=url_for("serve_image", filename=image_path),
             source_url=url_for("serve_image", filename=image_path),
             keywords=keyword_objects
@@ -328,6 +333,18 @@ def contribute_image():
 @app.route("/api/blacklist/suspend", methods=['POST'])
 def suspend_image():
     data = request.get_json()
+
+    existing = BlacklistedImage.query.filter_by(source_url=data["source_url"]).first()
+
+    if existing:
+        if existing.status == "blocked":
+            return jsonify({
+                "message": "Post already blocked"
+            }), 200
+        
+        return jsonify({
+            "message": "Post already suspended"
+        }), 200
 
     entry = BlacklistedImage(
         provider=data["provider"],
@@ -389,7 +406,6 @@ def remove_from_blacklist(image_id):
 @require_auth
 def get_user_photos():
     """Get all saved photos for the authenticated user."""
-    # photos = UserSavedPhoto.query.filter_by(user_id=g.user_id).order_by(UserSavedPhoto.created_at.desc()).all()
     saved_relations = (
         UserSavedPhoto.query
         .options(joinedload(UserSavedPhoto.post))
@@ -400,7 +416,7 @@ def get_user_photos():
 
     photos = [rel.post for rel in saved_relations]
     
-    blocked_urls = get_blocked_urls()
+    blocked_urls = get_blocked_and_suspended_urls()
     filtered_photos = filter(
         lambda photo: photo.source_url not in blocked_urls,
         photos)
@@ -434,24 +450,22 @@ def save_user_photo():
             image_url = data["image_url"],
             source_url = data["source_url"]
         )
-
-        keyword_objects = []
-
-        for keyword_name in data.get("keywords", []):
-
-            keyword = Keyword.query.filter_by(
-                name=keyword_name
-            ).first()
-
-            if not keyword:
-                keyword = Keyword(name=keyword_name)
-                db.session.add(keyword)
-
-            keyword_objects.append(keyword)
-
-        post.keywords = keyword_objects
-
+        
         db.session.add(post)
+
+    for keyword_name in data.get("keywords", []):
+
+        keyword = Keyword.query.filter_by(
+            name=keyword_name
+        ).first()
+
+        if not keyword:
+            keyword = Keyword(name=keyword_name)
+            db.session.add(keyword)
+        
+        if keyword not in post.keywords:
+            post.keywords.append(keyword)
+
         db.session.flush()
     
     existing_saved = UserSavedPhoto.query.filter_by(

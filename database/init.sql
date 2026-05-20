@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS posts (
     author_name VARCHAR(64) NOT NULL,
     author_url VARCHAR(512),
     description VARCHAR(512) NOT NULL,
+    image_path VARCHAR(512),
     image_url VARCHAR(512) NOT NULL,
     source_url VARCHAR(512) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

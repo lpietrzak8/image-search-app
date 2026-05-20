@@ -3,7 +3,7 @@ import logging
 from db_connector import Keyword
 import os
 from flask import current_app
-from services.blacklist_service import get_blocked_urls
+from services.blacklist_service import get_blocked_and_suspended_urls
 
 
 
@@ -11,7 +11,7 @@ def fetch_images_tag(search_keyword, num_images, api_providers):
     all_clip_paths = []
     all_posts_json = []
 
-    blocked_urls = get_blocked_urls()
+    blocked_urls = get_blocked_and_suspended_urls()
     for provider in api_providers:
         clip_paths, posts_json = provider.fetch(search_keyword, num_images, blocked_urls)
         all_clip_paths.extend(clip_paths)
@@ -27,6 +27,10 @@ def fetch_images_tag(search_keyword, num_images, api_providers):
             local_images = []
 
             for post in keyword.posts:
+
+                if not post.image_path:
+                    continue
+
                 local_path = os.path.join(UPLOAD_FOLDER, post.image_path)
                 
                 if os.path.exists(local_path):

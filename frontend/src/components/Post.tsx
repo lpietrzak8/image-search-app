@@ -53,9 +53,9 @@ const Post = ({
             provider: img.provider,
             reason: null
         })
-            .then(_ => {
+            .then(response => {
                 setIsSuspended(true);
-                setSuspendMessage("Post suspended");
+                setSuspendMessage(response.data.message);
                 setResults(results.filter(photo => photo.id != img.id));
 
             })

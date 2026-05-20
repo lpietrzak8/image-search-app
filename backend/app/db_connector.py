@@ -22,6 +22,8 @@ class Post(db.Model):
 
     description = Column(String(512), nullable=False)
 
+    image_path = Column(String(512), nullable=True)
+
     image_url = Column(String(512), nullable=False)
     source_url = Column(String(512), nullable=False, unique=True)
 
