@@ -155,18 +155,6 @@ const MyAccountPage = ({ setIsLoggedIn, selectedPost, setSelectedPost }: MyAccou
                   ))}
                 </div>
               )}
-              {selectedPost && (
-                  <Post
-                      img={selectedPost}
-                      onClose={() => setSelectedPost(null)}
-                      isLoggedIn={true}
-                      savedPhotos={new Set(...savedPhotos.map(savedPhoto => savedPhoto.image_url))}
-                      savingPhoto={null}
-                      handleSavePhoto={handleDeletePhoto}
-                      results={savedPhotos}
-                      setResults={setSavedPhotos}
-                  />
-              )}
             </div>
           )}
           {activeTab === "logout" && (
@@ -179,6 +167,18 @@ const MyAccountPage = ({ setIsLoggedIn, selectedPost, setSelectedPost }: MyAccou
           )}
         </div>
       </div>
+      {selectedPost && (
+          <Post
+              img={selectedPost}
+              onClose={() => setSelectedPost(null)}
+              isLoggedIn={true}
+              savedPhotos={new Set(...savedPhotos.map(savedPhoto => savedPhoto.image_url))}
+              savingPhoto={null}
+              handleSavePhoto={handleDeletePhoto}
+              results={savedPhotos}
+              setResults={setSavedPhotos}
+          />
+      )}
     </div>
   );
 };
