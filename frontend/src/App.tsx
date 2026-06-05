@@ -17,6 +17,7 @@ function App() {
   useEffect(() => {
     keycloak
       .init({
+        onLoad: "check-sso",
         checkLoginIframe: false,
       })
       .then((authenticated) => {
