@@ -474,7 +474,7 @@ def save_user_photo():
     ).first()
 
     if existing_saved:
-        return jsonify({"error": "Photo already saved"}), 409
+        return jsonify({"error": "Photo already saved", "id": existing_saved.id}), 409
 
     saved_photo = UserSavedPhoto(
         user_id=g.user_id,
@@ -484,7 +484,7 @@ def save_user_photo():
     db.session.add(saved_photo)
     db.session.commit()
 
-    return jsonify({"message": "Photo saved", "id": post.id}), 201
+    return jsonify({"message": "Photo saved", "id": saved_photo.id}), 201
 
 @app.route('/api/user/photos/<int:post_id>', methods=['DELETE'])
 @require_auth

@@ -125,7 +125,8 @@ services:
       - keycloak-network
 
   clip:
-    image: ffrycz/image_search_app-clip:latest
+    # image: ffrycz/image_search_app-clip:latest
+    build: ./clip
     container_name: clip
     ports:
       - 4000:4000

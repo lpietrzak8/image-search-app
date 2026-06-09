@@ -1,15 +1,17 @@
 import { useRef, useEffect, useState } from "react";
 import axios from "axios";
-import keycloak from "../keycloak";
-import Post from "../components/Post";
 
 const backendUrl = "/api/search";
 const numberOfResults = 30;
 
 interface HomePageProps {
   isLoggedIn: boolean;
-  selectedPost: any;
   setSelectedPost: any;
+  savingPhoto: string | null;
+  handleSavePhoto: (img: object) => void;
+  savedPhotos: Map<string,any>;
+  results: any[];
+  setResults: (results: any[]) => void;
 }
 
 interface searchStatus {
@@ -17,16 +19,14 @@ interface searchStatus {
   status: string;
 }
 
-function HomePage({ isLoggedIn, selectedPost, setSelectedPost }: HomePageProps) {
+function HomePage(
+    { isLoggedIn, setSelectedPost, savingPhoto, handleSavePhoto, savedPhotos, results, setResults }: HomePageProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const resultsRef = useRef<HTMLElement>(null);
 
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [savedPhotos, setSavedPhotos] = useState<Set<string>>(new Set());
-  const [savingPhoto, setSavingPhoto] = useState<string | null>(null);
   const [progress, setProgress] = useState<searchStatus | null>(null);
 
   useEffect(() => {
@@ -34,52 +34,6 @@ function HomePage({ isLoggedIn, selectedPost, setSelectedPost }: HomePageProps) 
       inputRef.current.focus();
     }
   }, []);
-
-  useEffect(() => {
-    if (isLoggedIn && keycloak.token) {
-      axios
-        .get("/api/user/photos", {
-          headers: { Authorization: `Bearer ${keycloak.token}` },
-        })
-        .then((response) => {
-          const urls = new Set(response.data.map((p: any) => p.image_url));
-          setSavedPhotos(urls as Set<string>);
-        })
-        .catch((err) => console.error("Failed to load saved photos:", err));
-    }
-  }, [isLoggedIn]);
-
-  const handleSavePhoto = async (img: any) => {
-    if (!keycloak.token) return;
-
-    setSavingPhoto(img.image_url);
-    await axios.post(
-        "/api/user/photos",
-        {
-          provider: img.provider,
-          author: img.author,
-          description: img.description,
-          image_url: img.image_url,
-          source_url: img.source_url,
-          keywords: img.keywords,
-        },
-        {
-          headers: { Authorization: `Bearer ${keycloak.token}` },
-        })
-        .then(() => {
-          setSavedPhotos((prev) => new Set(prev).add(img.image_url));
-        })
-        .catch((err) => {
-          if (err.response?.status === 409) {
-            setSavedPhotos((prev) => new Set(prev).add(img.image_url));
-          } else {
-            console.error("Failed to save photo:", err);
-          }
-        })
-        .finally(() => {
-          setSavingPhoto(null);
-        });
-  };
 
   const handleSearch = async () => {
     const trimmedQuery = query.trim();
@@ -197,29 +151,17 @@ function HomePage({ isLoggedIn, selectedPost, setSelectedPost }: HomePageProps) 
               </a>
               {isLoggedIn && (
                 <button
-                  className={`save-btn ${savedPhotos.has(img.image_url) ? "saved" : ""}`}
+                  className={`save-btn ${savedPhotos.has(img.source_url) ? "saved" : ""}`}
                   onClick={() => handleSavePhoto(img)}
-                  disabled={savingPhoto === img.image_url || savedPhotos.has(img.image_url)}
-                  title={savedPhotos.has(img.image_url) ? "Saved" : "Save to My Resources"}
+                  disabled={savingPhoto === img.image_url || savedPhotos.has(img.source_url)}
+                  title={savedPhotos.has(img.source_url) ? "Saved" : "Save to My Resources"}
                 >
-                  {savedPhotos.has(img.image_url) ? "✓" : "+"}
+                  {savedPhotos.has(img.source_url) ? "✓" : "+"}
                 </button>
               )}
             </div>
           ))}
         </div>
-          {selectedPost && (
-              <Post
-                  img={selectedPost}
-                  onClose={() => setSelectedPost(null)}
-                  isLoggedIn={isLoggedIn}
-                  savedPhotos={savedPhotos}
-                  savingPhoto={savingPhoto}
-                  handleSavePhoto={handleSavePhoto}
-                  results={results}
-                  setResults={setResults}
-              />
-          )}
       </section>
     </>
   );
