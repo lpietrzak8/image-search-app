@@ -29,10 +29,22 @@ vi.mock("axios", () => ({
   },
 }));
 
-function renderMyAccountPage(setIsLoggedIn = vi.fn()) {
+function renderMyAccountPage(
+    setIsLoggedIn = vi.fn(),
+    setSelectedPost = vi.fn(),
+    handleDeletePhoto = vi.fn(),
+    deletingId = null,
+    loading = false,) {
   return render(
     <MemoryRouter>
-      <MyAccountPage setIsLoggedIn={setIsLoggedIn} />
+      <MyAccountPage
+          setIsLoggedIn={setIsLoggedIn}
+          setSelectedPost={setSelectedPost}
+          handleDeletePhoto={handleDeletePhoto}
+          deletingId={deletingId}
+          loading={loading}
+          savedPhotos={[]}
+      />
     </MemoryRouter>
   );
 }
@@ -71,11 +83,30 @@ describe("MyAccountPage", () => {
   });
 
   it("shows saved photos when data is returned", async () => {
-    (axios.get as any).mockResolvedValue({
-      data: [
-        { id: 1, image_url: "http://img.com/1.jpg", description: "Sunset", provider: "pixabay", created_at: null },
-      ],
-    });
+    render(
+        <MemoryRouter>
+          <MyAccountPage
+              setIsLoggedIn={vi.fn()}
+              setSelectedPost={vi.fn()}
+              handleDeletePhoto={vi.fn()}
+              deletingId={null}
+              loading={false}
+              savedPhotos={[
+                {
+                  id: "1",
+                  author: {
+                    author_name: "John",
+                    author_url: null,
+                  },
+                  source_url: "http://img.com",
+                  image_url: "http://img.com/1.jpg",
+                  description: "Sunset",
+                  provider: "pixabay",
+                  created_at: null },
+              ]}
+          />
+        </MemoryRouter>
+    )
     renderMyAccountPage();
     await waitFor(() => {
       expect(screen.getByRole("img", { name: /sunset/i })).toBeInTheDocument();
@@ -119,17 +150,40 @@ describe("MyAccountPage", () => {
   });
 
   it("deletes a saved photo when remove button is clicked", async () => {
-    (axios.get as any).mockResolvedValue({
-      data: [
-        { id: 7, image_url: "http://img.com/7.jpg", description: "Mountain", provider: "unsplash", created_at: null },
-      ],
-    });
-    (axios.delete as any).mockResolvedValue({ data: {} });
+    const handleDeletePhoto = vi.fn();
+
+    render(
+        <MemoryRouter>
+          <MyAccountPage
+              setIsLoggedIn={vi.fn()}
+              setSelectedPost={vi.fn()}
+              handleDeletePhoto={handleDeletePhoto}
+              deletingId={null}
+              loading={false}
+              savedPhotos={[
+                {
+                  id: "1",
+                  author: {
+                    author_name: "John",
+                    author_url: null,
+                  },
+                  source_url: "http://img.com",
+                  image_url: "http://img.com/1.jpg",
+                  description: "Sunset",
+                  provider: "pixabay",
+                  created_at: null },
+              ]}
+          />
+        </MemoryRouter>
+    )
+
     renderMyAccountPage();
-    await waitFor(() => expect(screen.getByRole("img", { name: /mountain/i })).toBeInTheDocument());
-    fireEvent.click(screen.getByTitle(/remove from saved/i));
-    await waitFor(() => {
-      expect(axios.delete).toHaveBeenCalledWith("/api/user/photos/7", expect.anything());
-    });
+
+    fireEvent.click(screen.getByTitle(/remove from saved/i))
+
+    expect(handleDeletePhoto).toHaveBeenCalledTimes(1);
+    expect(handleDeletePhoto).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "1", description: "Sunset" }),
+    )
   });
 });

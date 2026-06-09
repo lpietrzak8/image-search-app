@@ -24,10 +24,25 @@ const mockEventSource = {
   close: vi.fn(),
 };
 
-function renderHomePage(isLoggedIn = false) {
+function renderHomePage(isLoggedIn = false,
+                        setSelectedPost = vi.fn(),
+                        savingPhoto = null,
+                        handleSavePhoto = vi.fn(),
+                        savedPhotos = new Map<string, any>(),
+                        results = [],
+                        setResults = vi.fn()
+                        ) {
   return render(
     <MemoryRouter>
-      <HomePage isLoggedIn={isLoggedIn} />
+      <HomePage
+          isLoggedIn={isLoggedIn}
+          setSelectedPost={setSelectedPost()}
+          savingPhoto={savingPhoto}
+          handleSavePhoto={handleSavePhoto}
+          savedPhotos={savedPhotos}
+          results={results}
+          setResults={setResults}
+      />
     </MemoryRouter>,
   );
 }

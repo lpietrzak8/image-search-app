@@ -25,9 +25,12 @@ function renderPost(overrides = {}) {
     img: mockImg,
     onClose: vi.fn(),
     isLoggedIn: false,
-    savedPhotos: new Set<string>(),
+    savedPhotos: new Map<string, any>(),
     savingPhoto: null,
     handleSavePhoto: vi.fn(),
+    handleDeletePhoto: vi.fn(),
+    results: [],
+    setResults: vi.fn(),
     ...overrides,
   }
   return render(
@@ -104,9 +107,9 @@ describe('Post', () => {
   })
 
   it('shows saved state when image is already saved', () => {
-    const savedPhotos = new Set([mockImg.image_url])
+    const savedPhotos = new Map().set(mockImg.source_url, mockImg)
     renderPost({ isLoggedIn: true, savedPhotos })
-    expect(screen.getByTitle('Saved')).toBeInTheDocument()
+    expect(screen.getByTitle('Delete')).toBeInTheDocument()
     expect(screen.getByText('✓')).toBeInTheDocument()
   })
 
@@ -135,7 +138,9 @@ describe('Post', () => {
 
   it('shows suspend message after successful suspend', async () => {
     const mockedAxios = axios as any
-    mockedAxios.post.mockResolvedValueOnce({})
+    mockedAxios.post.mockResolvedValueOnce({
+      data: { message: 'Post suspended' },
+    })
     renderPost()
 
     const flagBtn = document.querySelector('.suspendButton')!
