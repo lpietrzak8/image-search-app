@@ -12,6 +12,11 @@ services:
       - clip
     networks:
       - app-network
+    develop:
+      watch:
+        - action: sync+restart
+          path: .
+          target: /opt/
 
   backend:
     # image: ffrycz/image_search_app-backend:latest
@@ -57,6 +62,11 @@ services:
       - pexels_api_key
       - unsplash_api_key
       - captha_key
+    develop:
+      watch:
+        - action: sync+restart
+          path: .
+          target: /opt/
 
   memoryStore:
     image: redis
@@ -125,8 +135,8 @@ services:
       - keycloak-network
 
   clip:
-    # image: ffrycz/image_search_app-clip:latest
-    build: ./clip
+    image: ffrycz/image_search_app-clip:latest
+    # build: ./clip
     container_name: clip
     ports:
       - 4000:4000

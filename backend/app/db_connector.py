@@ -43,7 +43,11 @@ class BlacklistedImage(db.Model):
     id = Column(Integer, primary_key=True)
 
     provider = Column(String(32), nullable=False)
+
     source_url = Column(String(512), nullable=False, unique=True)
+    image_url = Column(String(512), nullable=False)
+
+    description = Column(String(512), nullable=True)
 
     status = Column(
         Enum("suspended", "blocked", name="blacklist_status"),

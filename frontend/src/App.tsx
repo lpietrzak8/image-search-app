@@ -10,6 +10,7 @@ import keycloak from "./keycloak";
 import "./App.css";
 import axios from "axios";
 import Post from "./components/Post.tsx";
+import AdminPanel from "./pages/AdminPanel.tsx";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -176,6 +177,8 @@ function App() {
           />}
         />
         <Route path="/contribute" element={<ContributePage />} />
+
+          <Route path={"/admin"} element={<AdminPanel setIsLoggedIn={setIsLoggedIn}/>} />
       </Routes>
       {selectedPost && (
           <Post

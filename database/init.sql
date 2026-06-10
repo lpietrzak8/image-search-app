@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS blacklisted_images (
     id INT NOT NULL AUTO_INCREMENT,
     provider VARCHAR(32) NOT NULL,
     source_url VARCHAR(512) NOT NULL UNIQUE,
+    image_url VARCHAR(512) NOT NULL UNIQUE,
+    description VARCHAR(512),
     status ENUM('suspended', 'blocked') NOT NULL DEFAULT 'suspended',
     reason VARCHAR(225),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
