@@ -8,14 +8,15 @@ CREATE TABLE IF NOT EXISTS posts (
     image_url VARCHAR(512) NOT NULL,
     source_url VARCHAR(512) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
     UNIQUE KEY unique_photo (source_url(255))
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS keywords (
     id INT NOT NULL AUTO_INCREMENT,
-    name VARCHAR(64) NOT NULL,
-    PRIMARY KEY (id)
+    name VARCHAR(255) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY unique_name (name(191))
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS post_keywords (
@@ -26,7 +27,7 @@ CREATE TABLE IF NOT EXISTS post_keywords (
     FOREIGN KEY (keyword_id) REFERENCES keywords(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS blacklisted_images (
+CREATE TABLE IF NOT EXISTS blacklist_images (
     id INT NOT NULL AUTO_INCREMENT,
     provider VARCHAR(32) NOT NULL,
     source_url VARCHAR(512) NOT NULL UNIQUE,
@@ -46,6 +47,5 @@ CREATE TABLE IF NOT EXISTS user_saved_photos (
     FOREIGN KEY (post_id)
         REFERENCES posts(id)
         ON DELETE CASCADE,
-    
-    UNIQUE KEY unique_user_photo (user_id, photo_id)
+    UNIQUE KEY unique_user_photo (user_id, post_id)
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

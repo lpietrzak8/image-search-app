@@ -12,6 +12,10 @@ from requests.exceptions import HTTPError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
+def _rel_image_path(local_path):
+    return os.path.relpath(local_path, UPLOAD_FOLDER)
+
+
 AI_KEYWORDS = ["ai", "generated", "midjourney", "stable diffusion", "dall-e", "sora", "flux", "deepai"]
 
 def looks_like_ai(metadata):
@@ -92,7 +96,8 @@ class PixabayProvider(APIProvider):
                         "keywords": [keyword],
                         "image_url": public_url,
                         "source_url": hit.get("pageURL"),
-                        "provider": "pixabay"
+                        "provider": "pixabay",
+                        "image_path": _rel_image_path(local_path),
                     }
                 except Exception as e:
                     logging.warning(f"Failed to fetch {image_url}: {e}")
@@ -162,7 +167,7 @@ class PexelsProvider(APIProvider):
                 clip_paths.append(clip_path)
 
                 public_url = url_for("serve_image", filename=f"pexels/{filename}")
-                
+
                 posts_json.append({
                     "id": f"pexels-{photo.get("id")}",
                     "author": {
@@ -173,7 +178,9 @@ class PexelsProvider(APIProvider):
                     "keywords": [keyword],
                     "image_url": public_url,
                     "source_url": source_url,
-                    "provider": "pexels"})
+                    "provider": "pexels",
+                    "image_path": _rel_image_path(local_path),
+                })
         
         except  HTTPError as e:
             logging.error(f"Failed to fetch from Pexels. Error message: {e}")
@@ -232,7 +239,8 @@ class UnsplashProvider(APIProvider):
                         "keywords": [keyword],
                         "image_url": public_url,
                         "source_url": result.get("links", {}).get("html"),
-                        "provider": "unsplash"
+                        "provider": "unsplash",
+                        "image_path": _rel_image_path(local_path),
                     }
                 except Exception as e:
                     logging.warning(f"Failed to fetch {image_url}: {e}")

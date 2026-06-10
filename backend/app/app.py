@@ -15,6 +15,7 @@ from sqlalchemy.orm import joinedload
 import time
 import logging
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 from contextlib import contextmanager
@@ -109,32 +110,49 @@ def search_generator(job_id):
     
         
     all_results = []
-    total = len(keywords)
-    done = 0
+    tags = keywords + ([query] if len(keywords) > 1 else [])
+    total = len(tags)
 
-    for tag in keywords:         
-        yield {
-            "event": "progress",
-            "data": {
-                "current": done,
-                "total": total,
-                "percent": int(done / total * 100),
-                "tag": tag,
-            },
-        }
+    yield {
+        "event": "progress",
+        "data": {"current": 0, "total": total, "percent": 0, "tag": tags[0]},
+    }
 
-        with timer(f"get_similar_images [{tag}]"):
-            result = searcher.get_similar_images(tag, query, MAX_SEARCH, top_k)
+    def fetch_tag(tag):
+        with app.app_context():
+            with timer(f"get_similar_images [{tag}]"):
+                return tag, searcher.get_similar_images(tag, query, MAX_SEARCH, top_k)
 
-        if result:
-            top_images, top_scores = result
-            for image, score in zip(top_images, top_scores):
-                all_results.append((image, score))
+    with ThreadPoolExecutor(max_workers=len(tags)) as executor:
+        futures = {executor.submit(fetch_tag, tag): tag for tag in tags}
+        done = 0
+        for future in as_completed(futures):
+            tag, result = future.result()
+            if result:
+                top_images, top_scores = result
+                for image, score in zip(top_images, top_scores):
+                    all_results.append((image, score))
+            done += 1
+            yield {
+                "event": "progress",
+                "data": {
+                    "current": done,
+                    "total": total,
+                    "percent": int(done / total * 100),
+                    "tag": tag,
+                },
+            }
     
-        done += 1
-    
-    all_results.sort(key = lambda x: x[1], reverse=True)
-    final_results = all_results[:top_k]
+    seen = set()
+    deduped = []
+    for image, score in all_results:
+        key = image.get("source_url")
+        if key not in seen:
+            seen.add(key)
+            deduped.append((image, score))
+
+    deduped.sort(key=lambda x: x[1], reverse=True)
+    final_results = deduped[:top_k]
     final_images = [item[0] for item in final_results]
     
     job["result"] = final_images

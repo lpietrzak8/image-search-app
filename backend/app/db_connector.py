@@ -34,7 +34,7 @@ class Post(db.Model):
 class Keyword(db.Model):
     __tablename__ = 'keywords'
     id = Column(Integer, primary_key=True)
-    name = Column(String(64), unique=True, nullable=False)
+    name = Column(String(255), unique=True, nullable=False)
     posts = relationship("Post", secondary=post_keywords, back_populates="keywords")
 
 class BlacklistedImage(db.Model):
