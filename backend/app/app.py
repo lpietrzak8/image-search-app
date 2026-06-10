@@ -245,6 +245,33 @@ def get_posts_by_keywords(keyword_name):
     posts = keyword.posts
     return jsonify(build_posts_array(posts)), 200
 
+@app.route('/api/admin/posts/<post_id>', methods=["DELETE"])
+@require_auth
+@require_admin
+def delete_post(post_id):
+    img = Post.query.get_or_404(post_id)
+    path = img.image_path
+
+    try:
+        if not path:
+            db.session.delete(img)
+            db.session.commit()
+
+            return jsonify({"message": "Post deleted"})
+    
+        full_path = os.path.join(UPLOAD_FOLDER, path)
+        
+        os.remove(full_path)
+        
+        db.session.delete(img)
+        db.session.commit()
+
+        return jsonify({"message": "Post deleted"})
+    except OSError as e:
+        return jsonify({"message": f"{full_path} cannot be removed.", 
+                        "e": str(e)}), 404
+    except Exception:
+        return jsonify({"message": "Something went wrong"})
 
 @app.route('/api/uploads/<path:filename>')
 def serve_image(filename):
@@ -367,6 +394,8 @@ def suspend_image():
     entry = BlacklistedImage(
         provider=data["provider"],
         source_url=data["source_url"],
+        image_url=data["image_url"],
+        description=data["description"],
         status="suspended",
         reason=data.get("reason")
     )
@@ -377,34 +406,54 @@ def suspend_image():
     return jsonify({"message": "Post suspended"}), 201
 
 @app.route("/api/blacklist/suspended", methods=['GET'])
+@require_auth
+@require_admin
 def list_suspended():
-    images = BlacklistedImage.query.filter_by(status="suspended").all()
-    
+    images = BlacklistedImage.query.filter_by(status="suspended"
+    ).order_by(
+        BlacklistedImage.created_at.desc()
+    ).all()
+
+
     return jsonify([
         {
             "id": img.id,
             "provider": img.provider,
             "source_url": img.source_url,
-            "reason": img.reason
+            "image_url": img.image_url,
+            "description": img.description,
+            "reason": img.reason,
+            "status": "blacklisted"
         }
         for img in images
     ])
 
 @app.route("/api/blacklist/blocked", methods=['GET'])
-def list_blocked():
-    images = BlacklistedImage.query.filter_by(status="blocked").all()
+@require_auth
+@require_admin
+def list_blocked():    
+    images = BlacklistedImage.query.filter_by(
+        status="blocked"
+    ).order_by(
+        BlacklistedImage.updated_at.desc()
+    ).all()
     
     return jsonify([
         {
             "id": img.id,
             "provider": img.provider,
             "source_url": img.source_url,
-            "reason": img.reason
+            "image_url": img.image_url,
+            "description": img.description,
+            "reason": img.reason,
+            "status": "blacklisted"
         }
         for img in images
     ])
 
 @app.route("/api/blacklist/block/<int:image_id>", methods=['PATCH'])
+@require_auth
+@require_admin
 def block_image(image_id):
     img = BlacklistedImage.query.get_or_404(image_id)
     img.status = "blocked"
@@ -413,6 +462,8 @@ def block_image(image_id):
     return jsonify({"message": "Image blocked"})
 
 @app.route("/api/blacklist/<int:image_id>", methods=['DELETE'])
+@require_auth
+@require_admin
 def remove_from_blacklist(image_id):
     img = BlacklistedImage.query.get_or_404(image_id)
     db.session.delete(img)

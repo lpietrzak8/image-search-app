@@ -68,6 +68,8 @@ const Post = ({
         axios
             .post("/api/blacklist/suspend", {
             source_url: img.source_url,
+            image_url: img.image_url,
+            description: img.description,
             provider: img.provider,
             reason: null
         })

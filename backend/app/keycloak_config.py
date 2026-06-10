@@ -36,5 +36,18 @@ def require_auth(f):
 
         g.user_id = user_info.get('sub')
         g.user_info = user_info
+        g.roles = user_info.get("realm_access", {}).get("roles", [])
         return f(*args, **kwargs)
+    return decorated
+
+def require_admin(f):
+    @wraps(f)
+    @require_auth
+    def decorated(*args, **kwargs):
+        
+        if "admin" not in g.roles:
+            return jsonify({"error": "Unauthorized", "roles": g.user_info}), 403
+
+        return f(*args, **kwargs)
+
     return decorated
