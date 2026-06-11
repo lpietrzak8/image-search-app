@@ -49,7 +49,7 @@ def verify_recaptcha(token):
         )
         
         result = response.json()
-        logging.info(f"reCAPTCHA verification: success={result.get('success')}, score={result.get('score')}")
+        print(f"[CAPTCHA] Google response: {result}", flush=True)
         
         # For v3, check score (0.0 - 1.0, higher is better)
         if result.get('success') and result.get('score', 0) >= 0.5:

@@ -27,7 +27,7 @@ const AdminPanel = ({ setIsLoggedIn }: AdminPanelProps) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [filter, setFilter] = useState<
     "all" | "pending" | "approved" | "rejected" | "suspended" | "blocked"
-  >("pending");
+  >("all");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ const AdminPanel = ({ setIsLoggedIn }: AdminPanelProps) => {
 
     switch (filter) {
       case "all":
-        url = "/api/posts";
+        url = "/api/posts?provider=PHOTO-SEARCH";
         break;
       case "suspended":
         url = "/api/blacklist/suspended";

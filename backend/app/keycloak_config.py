@@ -1,4 +1,6 @@
 import os
+import base64
+import json
 import requests as http_requests
 from functools import wraps
 from flask import jsonify, request, g
@@ -6,6 +8,16 @@ import logging
 
 KEYCLOAK_URL = os.environ.get('KEYCLOAK_URL', 'http://keycloak:8080')
 KEYCLOAK_REALM = os.environ.get('KEYCLOAK_REALM', 'photo-search')
+
+def _decode_jwt_payload(token):
+    try:
+        payload_b64 = token.split('.')[1]
+        padding = 4 - len(payload_b64) % 4
+        if padding != 4:
+            payload_b64 += '=' * padding
+        return json.loads(base64.urlsafe_b64decode(payload_b64))
+    except Exception:
+        return {}
 
 def verify_keycloak_token(token):
     """Verify Keycloak token and return user info."""
@@ -36,7 +48,8 @@ def require_auth(f):
 
         g.user_id = user_info.get('sub')
         g.user_info = user_info
-        g.roles = user_info.get("realm_access", {}).get("roles", [])
+        jwt_payload = _decode_jwt_payload(token)
+        g.roles = jwt_payload.get("realm_access", {}).get("roles", [])
         return f(*args, **kwargs)
     return decorated
 

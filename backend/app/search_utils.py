@@ -93,6 +93,8 @@ def fetch_images_tag(search_keyword, num_images, api_providers):
             
             
             print(f"[DB] only {len(local_images)} images in DB for '{search_keyword}', fetching from APIs", flush=True)
+            if local_images:
+                all_posts_json.extend(build_posts_array(local_images))
 
     for provider in api_providers:
         clip_paths, posts_json = provider.fetch(search_keyword, num_images, blocked_urls)

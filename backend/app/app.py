@@ -232,7 +232,11 @@ def post_image():
 
 @app.route('/api/posts', methods=["GET"])
 def get_posts():
-    posts = Post.query.all()
+    provider = request.args.get('provider')
+    if provider:
+        posts = Post.query.filter_by(provider=provider).all()
+    else:
+        posts = Post.query.all()
     return jsonify(build_posts_array(posts)), 200
 
 @app.route('/api/posts/byKeyword/<string:keyword_name>', methods=["GET"])
