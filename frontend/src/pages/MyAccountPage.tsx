@@ -1,67 +1,38 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import axios from "axios";
 import keycloak from "../keycloak";
 import "./MyAccountPage.css";
 
 interface SavedPhoto {
-  id: number;
+  id: string;
+  author: any;
   image_url: string;
+  source_url: string;
   description: string | null;
   provider: string | null;
-  created_at: string | null;
+  created_at: any;
 }
 
 interface MyAccountPageProps {
   setIsLoggedIn: Dispatch<SetStateAction<boolean>>;
+  setSelectedPost: any;
+  handleDeletePhoto: (img: any) => void;
+  deletingId: string | null;
+  loading: boolean;
+  savedPhotos: SavedPhoto[];
 }
 
-const MyAccountPage = ({ setIsLoggedIn }: MyAccountPageProps) => {
+const MyAccountPage = ({
+                         setIsLoggedIn, setSelectedPost, handleDeletePhoto, deletingId, loading, savedPhotos }: MyAccountPageProps) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("resources");
-  const [savedPhotos, setSavedPhotos] = useState<SavedPhoto[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!keycloak.authenticated) {
       navigate("/login");
     }
   }, [navigate]);
-
-  useEffect(() => {
-    if (keycloak.authenticated && keycloak.token) {
-      setLoading(true);
-      axios
-        .get("/api/user/photos", {
-          headers: { Authorization: `Bearer ${keycloak.token}` },
-        })
-        .then((response) => {
-          setSavedPhotos(response.data);
-        })
-        .catch((err) => {
-          console.error("Failed to load saved photos:", err);
-        })
-        .finally(() => setLoading(false));
-    }
-  }, []);
-
-  const handleDeletePhoto = async (photoId: number) => {
-    if (!keycloak.token) return;
-
-    setDeletingId(photoId);
-    try {
-      await axios.delete(`/api/user/photos/${photoId}`, {
-        headers: { Authorization: `Bearer ${keycloak.token}` },
-      });
-      setSavedPhotos((prev) => prev.filter((p) => p.id !== photoId));
-    } catch (err) {
-      console.error("Failed to delete photo:", err);
-    } finally {
-      setDeletingId(null);
-    }
-  };
 
   const handleLogout = () => {
     keycloak.logout({
@@ -123,10 +94,14 @@ const MyAccountPage = ({ setIsLoggedIn }: MyAccountPageProps) => {
                 <div className="saved-photos-grid">
                   {savedPhotos.map((photo) => (
                     <div key={photo.id} className="saved-photo-card">
-                      <img src={photo.image_url} alt={photo.description || "Saved photo"} />
+                      <img
+                          src={photo.image_url}
+                          alt={photo.description || "Saved photo"}
+                          onClick={() => setSelectedPost(photo)}
+                      />
                       <button
                         className="remove-btn"
-                        onClick={() => handleDeletePhoto(photo.id)}
+                        onClick={() => handleDeletePhoto(photo)}
                         disabled={deletingId === photo.id}
                         title="Remove from saved"
                       >

@@ -23,9 +23,12 @@ type PostProps = {
     img: imageProps;
     onClose: () => void;
     isLoggedIn: boolean;
-    savedPhotos: Set<string>;
+    savedPhotos: Map<string,any>;
     savingPhoto: string | null;
     handleSavePhoto: (img: object) => void;
+    handleDeletePhoto: (img: object) => void;
+    results: any[];
+    setResults: (results: any[]) => void;
 }
 
 
@@ -36,30 +39,53 @@ const Post = ({
     savedPhotos,
     savingPhoto,
     handleSavePhoto,
+    handleDeletePhoto,
+    results,
+    setResults,
               } : PostProps)=> {
 
     const [isSuspended, setIsSuspended] = useState<boolean>(false);
-    const [suspendMessage, setSuspendMessage] = useState<string | null>(null);
+    const [message, setMessage] = useState<string | null>(null);
 
+    const toggleSave = () => {
+        try {
+            if (savedPhotos.has(img.source_url)) {
+                handleDeletePhoto(img);
+            } else {
+                handleSavePhoto(img);
+            }
+        }
+        catch (error: any) {
+            setMessage(error.message || "Something went wrong");
+            setTimeout(() => {
+                setMessage(null);
+            }, 3000)
+        }
+
+    }
 
     const suspendPost = () => {
         axios
             .post("/api/blacklist/suspend", {
             source_url: img.source_url,
+            image_url: img.image_url,
+            description: img.description,
             provider: img.provider,
             reason: null
         })
-            .then(_ => {
+            .then(response => {
                 setIsSuspended(true);
-                setSuspendMessage("Post suspended");
+                setMessage(response.data.message);
+                setResults(results.filter(photo => photo.id != img.id));
+
             })
             .catch(err => {
                 console.log(err);
-                setSuspendMessage("Something went wrong");
+                setMessage("Something went wrong");
             })
             .finally(() => {
                 setTimeout(() => {
-                    setSuspendMessage(null);
+                    setMessage(null);
                 }, 3000)
             })
     }
@@ -75,8 +101,8 @@ const Post = ({
         <div className={"modal-overlay"} onClick={onClose}>
             <div className={"postContainer"} onClick={(e) => e.stopPropagation()}>
                 <div className={"photoContainer"}>
-                    {suspendMessage && (
-                        <div className={"suspendMessage"}>{suspendMessage}</div>
+                    {message && (
+                        <div className={"suspendMessage"}>{message}</div>
                     )}
                     <img src={img.image_url} alt={img.description || "Could not load the photo"} />
                     <div className={"saveButtonsContainer"}>
@@ -90,12 +116,12 @@ const Post = ({
                         </a>
                         {isLoggedIn && (
                             <button
-                                className={`save-btn ${savedPhotos.has(img.image_url) ? "saved" : ""}`}
-                                onClick={() => handleSavePhoto(img)}
-                                disabled={savingPhoto === img.image_url || savedPhotos.has(img.image_url)}
-                                title={savedPhotos.has(img.image_url) ? "Saved" : "Save to My Resources"}
+                                className={`save-btn ${savedPhotos.has(img.source_url) ? "saved" : ""}`}
+                                onClick={() => toggleSave()}
+                                disabled={savingPhoto === img.image_url}
+                                title={savedPhotos.has(img.source_url) ? "Delete" : "Save to My Resources"}
                             >
-                                {savedPhotos.has(img.image_url) ? "✓" : "+"}
+                                {savedPhotos.has(img.source_url) ? "✓" : "+"}
                             </button>
                         )}
                     </div>

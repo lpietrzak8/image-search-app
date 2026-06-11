@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import keycloak from "../keycloak";
 import "./AdminPanel.css";
+import axios from "axios";
 
 interface AdminPanelProps {
   setIsLoggedIn: Dispatch<SetStateAction<boolean>>;
@@ -10,11 +11,14 @@ interface AdminPanelProps {
 
 interface Post {
   id: number;
-  author: string;
-  description: string;
+  provider: string;
+  source_url: string;
+  reason: string | null;
+  author: string | null;
+  description: string | null;
   image_url: string;
-  keywords: string[];
-  status: "pending" | "approved" | "rejected";
+  keywords: string[] | null;
+  status: "pending" | "approved" | "rejected" | "blacklisted";
 }
 
 const AdminPanel = ({ setIsLoggedIn }: AdminPanelProps) => {
@@ -22,8 +26,8 @@ const AdminPanel = ({ setIsLoggedIn }: AdminPanelProps) => {
   const [activeTab, setActiveTab] = useState("moderation");
   const [posts, setPosts] = useState<Post[]>([]);
   const [filter, setFilter] = useState<
-    "all" | "pending" | "approved" | "rejected"
-  >("pending");
+    "all" | "pending" | "approved" | "rejected" | "suspended" | "blocked"
+  >("all");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -44,89 +48,62 @@ const AdminPanel = ({ setIsLoggedIn }: AdminPanelProps) => {
 
   const fetchPosts = async () => {
     setLoading(true);
-    try {
-      const url =
-        filter === "all"
-          ? "http://localhost:5001/api/admin/posts"
-          : `http://localhost:5001/api/admin/posts?status=${filter}`;
+    let url: string;
 
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${keycloak.token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setPosts(data.posts || []);
-      }
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-    } finally {
-      setLoading(false);
+    switch (filter) {
+      case "all":
+        url = "/api/admin/posts?provider=PHOTO-SEARCH";
+        break;
+      case "suspended":
+        url = "/api/blacklist/suspended";
+        break;
+      case "blocked":
+        url = "/api/blacklist/blocked";
+        break;
+      default:
+        url = `/api/admin/posts?status=${filter}`;
+        break;
     }
+
+    axios
+        .get(url, {headers: {
+          Authorization: `Bearer ${keycloak.token}`,
+          },
+        })
+        .then((response) => {
+          setPosts(response.data || []);
+        })
+        .catch((error) => console.error(error))
+        .finally(() => setLoading(false));
   };
 
   const handleApprove = async (postId: number) => {
-    try {
-      const response = await fetch(
-        `http://localhost:5001/api/admin/posts/${postId}/approve`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${keycloak.token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        fetchPosts();
-      }
-    } catch (error) {
-      console.error("Error approving post:", error);
-    }
+    axios
+        .put(`/api/admin/posts/${postId}/approve`, null, {headers: {
+          Authorization: `Bearer ${keycloak.token}`,
+          }})
+        .then(() => fetchPosts())
+        .catch((error) => console.error("Error approving post:", error))
   };
 
   const handleReject = async (postId: number) => {
-    try {
-      const response = await fetch(
-        `http://localhost:5001/api/admin/posts/${postId}/reject`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${keycloak.token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        fetchPosts();
-      }
-    } catch (error) {
-      console.error("Error rejecting post:", error);
-    }
+    axios
+        .put(`/api/admin/posts/${postId}/reject`, null, {headers: {
+          Authorization: `Bearer ${keycloak.token}`,
+          }})
+        .then(() => fetchPosts())
+        .catch((error) => console.error("Error rejecting post:", error))
   };
 
   const handleDelete = async (postId: number) => {
     if (!confirm("Are you sure you want to delete this post?")) return;
 
-    try {
-      const response = await fetch(
-        `http://localhost:5001/api/admin/posts/${postId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${keycloak.token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        fetchPosts();
-      }
-    } catch (error) {
-      console.error("Error deleting post:", error);
-    }
+    axios
+        .delete(`/api/admin/posts/${postId}`, {headers: {
+          Authorization: `Bearer ${keycloak.token}`,
+          }})
+        .then(() => fetchPosts())
+        .catch((error) => console.error("Error deleting post:", error))
   };
 
   const handleLogout = () => {
@@ -135,6 +112,25 @@ const AdminPanel = ({ setIsLoggedIn }: AdminPanelProps) => {
     });
     setIsLoggedIn(false);
   };
+
+  const handleBlock = async (postId: number) => {
+    axios
+        .patch(`/api/blacklist/block/${postId}`, null,  {headers: {
+          Authorization: `Bearer ${keycloak.token}`,
+          }})
+        .then(() => fetchPosts())
+        .catch((error) => console.error(error))
+  }
+
+  const handleUnlock = async (postId: number) => {
+    axios
+        .delete(`/api/blacklist/${postId}`, {headers: {
+            Authorization: `Bearer ${keycloak.token}`,
+          }
+        })
+        .then(()=> fetchPosts())
+        .catch((error) => console.error(error))
+  }
 
   const user = {
     username: keycloak.tokenParsed?.preferred_username || "Admin",
@@ -193,6 +189,18 @@ const AdminPanel = ({ setIsLoggedIn }: AdminPanelProps) => {
               >
                 Rejected
               </button>
+              <button
+                className={filter === "suspended" ? "active" : ""}
+                onClick={() => setFilter("suspended")}
+              >
+                Suspended
+              </button>
+              <button
+                className={filter === "blocked" ? "active" : ""}
+                onClick={() => setFilter("blocked")}
+              >
+                  Blocked
+              </button>
             </div>
 
             {loading ? (
@@ -204,42 +212,61 @@ const AdminPanel = ({ setIsLoggedIn }: AdminPanelProps) => {
                 {posts.map((post) => (
                   <div
                     key={post.id}
-                    className={`post-card status-${post.status}`}
+                    className={`post-card status-${post.status === "blacklisted" ? "pending" : post.status}`}
                   >
-                    <img src={post.image_url} alt={post.description} />
+                    <img src={post.image_url} alt={post.description || `Post ${post.id}`} />
                     <div className="post-info">
-                      <p>
-                        <strong>Author:</strong> {post.author}
-                      </p>
-                      <p>
-                        <strong>Description:</strong> {post.description}
-                      </p>
-                      <p>
+                      {post.description && (
+                          <p>
+                            <strong>Description:</strong> {post.description}
+                          </p>)}
+                      {post.keywords && (<p>
                         <strong>Keywords:</strong> {post.keywords.join(", ")}
-                      </p>
-                      <p>
+                      </p>)}
+                      {post.status !== "blacklisted" && (<p>
                         <strong>Status:</strong>{" "}
                         <span className={`status-badge ${post.status}`}>
                           {post.status}
                         </span>
-                      </p>
+                      </p>)}
                     </div>
                     <div className="post-actions">
-                      {post.status !== "approved" && (
-                        <button
-                          className="approve-btn"
-                          onClick={() => handleApprove(post.id)}
-                        >
-                          ✓ Approve
-                        </button>
-                      )}
-                      {post.status !== "rejected" && (
-                        <button
-                          className="reject-btn"
-                          onClick={() => handleReject(post.id)}
-                        >
-                          ✗ Reject
-                        </button>
+                      {post.status !== "blacklisted" ? (
+                          <>
+                            {post.status !== "approved" && (
+                                <button
+                                    className="approve-btn"
+                                    onClick={() => handleApprove(post.id)}
+                                >
+                                  ✓ Approve
+                                </button>
+                            )}
+                            {post.status !== "rejected" && (
+                                <button
+                                    className="reject-btn"
+                                    onClick={() => handleReject(post.id)}
+                                >
+                                  ✗ Reject
+                                </button>
+                            )}
+                          </>
+                      ) : (
+                          <>
+                            <button
+                                className="approve-btn"
+                                onClick={() => handleUnlock(post.id)}
+                            >
+                              Unlock
+                            </button>
+                            {filter === "suspended" && (
+                                <button
+                                    className="delete-btn"
+                                    onClick={() => handleBlock(post.id)}
+                                >
+                                  Block
+                                </button>
+                            )}
+                          </>
                       )}
                       <button
                         className="delete-btn"

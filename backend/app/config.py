@@ -20,16 +20,17 @@ def build_posts_array(posts):
     results = []
     for post in posts:
         results.append({
-            "id": f"local-{post.id}",
+            "id": post.id,
             "author": {
-                "name": post.author,
-                "url": None
+                "name": post.author_name,
+                "url": post.author_url
             },
             "description": post.description,
             "keywords": [kw.name for kw in post.keywords],
-            "image_url": url_for("serve_image", filename=post.image_path),
-            "source_url": url_for("serve_image", filename=post.image_path),
-            "provider": "PHOTO-SEARCH"
+            "image_url": post.image_url,
+            "source_url": post.source_url,
+            "provider": post.provider,
+            "status": post.status
         })
     return results
 
@@ -49,7 +50,7 @@ def verify_recaptcha(token):
         )
         
         result = response.json()
-        logging.info(f"reCAPTCHA verification: success={result.get('success')}, score={result.get('score')}")
+        print(f"[CAPTCHA] Google response: {result}", flush=True)
         
         # For v3, check score (0.0 - 1.0, higher is better)
         if result.get('success') and result.get('score', 0) >= 0.5:

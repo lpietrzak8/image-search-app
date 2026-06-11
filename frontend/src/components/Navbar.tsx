@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import {useEffect, useState} from "react";
+import {Link, NavLink} from "react-router-dom";
 import "./Navbar.css";
+import keycloak from "../keycloak.ts";
 
 interface NavbarProps {
   isLoggedIn: boolean;
@@ -8,6 +9,16 @@ interface NavbarProps {
 
 const Navbar = ({ isLoggedIn }: NavbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const roles = keycloak.tokenParsed?.realm_access?.roles || [];
+    if(roles.includes("admin")) {
+      setIsAdmin(true)
+    } else {
+      setIsAdmin(false)
+    }
+  }, [isLoggedIn])
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -20,7 +31,7 @@ const Navbar = ({ isLoggedIn }: NavbarProps) => {
   return (
     <>
       <header className="header">
-        <div className="logo">PHOTO-SEARCH</div>
+        <Link to={"/"}><div className="logo">PHOTO-SEARCH</div></Link>
 
         <button
           className={`hamburger ${isMenuOpen ? "active" : ""}`}
@@ -62,6 +73,13 @@ const Navbar = ({ isLoggedIn }: NavbarProps) => {
                 Contribute Data
               </NavLink>
             </li>
+            {isAdmin && (
+                <li>
+                 <NavLink to="/admin" onClick={closeMenu}>
+                   Admin Panel
+                 </NavLink>
+                </li>
+            )}
           </ul>
         </nav>
       </header>

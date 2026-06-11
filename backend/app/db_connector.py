@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, Integer, String, Table, ForeignKey
+from sqlalchemy import Column, Integer, String, Table, ForeignKey, Enum, DateTime
 from sqlalchemy.orm import relationship
 
 db = SQLAlchemy()
@@ -14,36 +14,57 @@ post_keywords = Table(
 class Post(db.Model):
     __tablename__='posts'
     id = Column(Integer, primary_key=True)
-    author = Column(String(64), nullable=False)
-    keywords = relationship("Keyword", secondary=post_keywords, back_populates="posts")
+
+    provider = Column(String(64), nullable=False)
+
+    author_name = Column(String(64), nullable=False)
+    author_url = Column(String(512), nullable=True)
+
     description = Column(String(512), nullable=False)
-    image_path = Column(String(512), nullable=False)
+
+    image_path = Column(String(512), nullable=True)
+
+    image_url = Column(String(512), nullable=False)
+    source_url = Column(String(512), nullable=False, unique=True)
+
+    created_at = Column(DateTime, server_default=db.func.now())
+    
+    keywords = relationship("Keyword", secondary=post_keywords, back_populates="posts")
+
+    status = Column(
+        Enum("pending",  "approved", "rejected", name="status"),
+        nullable=True
+    )
 
 class Keyword(db.Model):
     __tablename__ = 'keywords'
     id = Column(Integer, primary_key=True)
-    name = Column(String(64), unique=True, nullable=False)
+    name = Column(String(255), unique=True, nullable=False)
     posts = relationship("Post", secondary=post_keywords, back_populates="keywords")
 
 class BlacklistedImage(db.Model):
     __tablename__='blacklist_images'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
 
-    provider = db.Column(db.String(32), nullable=False)
-    source_url = db.Column(db.String(512), nullable=False, unique=True)
+    provider = Column(String(32), nullable=False)
 
-    status = db.Column(
-        db.Enum("suspended", "blocked", name="blacklist_status"),
+    source_url = Column(String(512), nullable=False, unique=True)
+    image_url = Column(String(512), nullable=False)
+
+    description = Column(String(512), nullable=True)
+
+    status = Column(
+        Enum("suspended", "blocked", name="blacklist_status"),
         nullable=False,
         default="suspended"
     )
 
-    reason = db.Column(db.String(225), nullable=True)
+    reason = Column(String(225), nullable=True)
 
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at = db.Column(
-        db.DateTime,
+    created_at = Column(DateTime, server_default=db.func.now())
+    updated_at = Column(
+        DateTime,
         server_default=db.func.now(),
         onupdate=db.func.now()
     )
@@ -51,9 +72,11 @@ class BlacklistedImage(db.Model):
 class UserSavedPhoto(db.Model):
     __tablename__ = 'user_saved_photos'
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(255), nullable=False)
-    image_url = db.Column(db.String(512), nullable=False)
-    description = db.Column(db.String(512), nullable=True)
-    provider = db.Column(db.String(64), nullable=True)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    id = Column(Integer, primary_key=True)
+    
+    user_id = Column(String(255), nullable=False)
+    
+    post_id = Column(Integer, ForeignKey("posts.id"), nullable=False)
+
+    post = relationship("Post")
+    created_at = Column(DateTime, server_default=db.func.now())

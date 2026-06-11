@@ -8,3 +8,9 @@ def get_blocked_urls():
             .filter_by(status="blocked")
             .all()
     }
+
+def get_blocked_and_suspended_urls():
+    return {
+        b.source_url
+        for b in BlacklistedImage.query.all()
+    }
