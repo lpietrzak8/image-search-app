@@ -74,7 +74,7 @@ def fetch_images_tag(search_keyword, num_images, api_providers):
 
             for post in keyword.posts:
 
-                if not post.image_path:
+                if not post.image_path or post.status in ["pending", "rejected"]:
                     continue
 
                 local_path = os.path.join(UPLOAD_FOLDER, post.image_path)

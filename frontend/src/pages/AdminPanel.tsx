@@ -52,7 +52,7 @@ const AdminPanel = ({ setIsLoggedIn }: AdminPanelProps) => {
 
     switch (filter) {
       case "all":
-        url = "/api/posts?provider=PHOTO-SEARCH";
+        url = "/api/admin/posts?provider=PHOTO-SEARCH";
         break;
       case "suspended":
         url = "/api/blacklist/suspended";
@@ -78,43 +78,21 @@ const AdminPanel = ({ setIsLoggedIn }: AdminPanelProps) => {
   };
 
   const handleApprove = async (postId: number) => {
-    try {
-      const response = await fetch(
-        `http://localhost:5001/api/admin/posts/${postId}/approve`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${keycloak.token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        fetchPosts();
-      }
-    } catch (error) {
-      console.error("Error approving post:", error);
-    }
+    axios
+        .put(`/api/admin/posts/${postId}/approve`, null, {headers: {
+          Authorization: `Bearer ${keycloak.token}`,
+          }})
+        .then(() => fetchPosts())
+        .catch((error) => console.error("Error approving post:", error))
   };
 
   const handleReject = async (postId: number) => {
-    try {
-      const response = await fetch(
-        `http://localhost:5001/api/admin/posts/${postId}/reject`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${keycloak.token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        fetchPosts();
-      }
-    } catch (error) {
-      console.error("Error rejecting post:", error);
-    }
+    axios
+        .put(`/api/admin/posts/${postId}/reject`, null, {headers: {
+          Authorization: `Bearer ${keycloak.token}`,
+          }})
+        .then(() => fetchPosts())
+        .catch((error) => console.error("Error rejecting post:", error))
   };
 
   const handleDelete = async (postId: number) => {

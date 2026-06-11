@@ -31,6 +31,11 @@ class Post(db.Model):
     
     keywords = relationship("Keyword", secondary=post_keywords, back_populates="posts")
 
+    status = Column(
+        Enum("pending",  "approved", "rejected", name="status"),
+        nullable=True
+    )
+
 class Keyword(db.Model):
     __tablename__ = 'keywords'
     id = Column(Integer, primary_key=True)

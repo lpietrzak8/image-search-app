@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS posts (
     image_url VARCHAR(512) NOT NULL,
     source_url VARCHAR(512) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status ENUM("pending",  "approved", "rejected"),
     PRIMARY KEY (id),
     UNIQUE KEY unique_photo (source_url(255))
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

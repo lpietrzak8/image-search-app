@@ -222,22 +222,13 @@ def post_image():
             image_path=relative_path,
             image_url=url_for("serve_image", filename=relative_path),
             source_url=url_for("serve_image", filename=relative_path),
-            keywords=keyword_objects
+            keywords=keyword_objects,
+            status="pending"
         )
     db.session.add(new_post)
     db.session.commit()
 
     return jsonify({"message": "Post created"}), 201
-
-
-@app.route('/api/posts', methods=["GET"])
-def get_posts():
-    provider = request.args.get('provider')
-    if provider:
-        posts = Post.query.filter_by(provider=provider).all()
-    else:
-        posts = Post.query.all()
-    return jsonify(build_posts_array(posts)), 200
 
 @app.route('/api/posts/byKeyword/<string:keyword_name>', methods=["GET"])
 def get_posts_by_keywords(keyword_name):
@@ -249,8 +240,43 @@ def get_posts_by_keywords(keyword_name):
     posts = keyword.posts
     return jsonify(build_posts_array(posts)), 200
 
+
+@app.route('/api/admin/posts', methods=["GET"])
+@require_admin
+def get_posts():
+    provider = request.args.get('provider')
+    status = request.args.get('status')
+
+    if provider and status:
+        posts = Post.query.filter_by(provider=provider, status=status).all()
+    elif provider:
+        posts = Post.query.filter_by(provider=provider).all()
+    elif status:
+        posts = Post.query.filter_by(status=status).all()
+    else:
+        posts = Post.query.all()
+    return jsonify(build_posts_array(posts)), 200
+
+@app.route('/api/admin/posts/<post_id>/approve', methods=["PUT"])
+@require_admin
+def approve_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    post.status="approved"
+    db.session.commit()
+
+    return jsonify({"message": f"Image {post_id} approved"})
+
+@app.route('/api/admin/posts/<post_id>/reject', methods=["PUT"])
+@require_admin
+def reject_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    post.status="rejected"
+    db.session.commit()
+
+    return jsonify({"message": f"Image {post_id} rejected"})
+
+
 @app.route('/api/admin/posts/<post_id>', methods=["DELETE"])
-@require_auth
 @require_admin
 def delete_post(post_id):
     img = Post.query.get_or_404(post_id)
@@ -363,7 +389,8 @@ def contribute_image():
             image_path=image_path,
             image_url=url_for("serve_image", filename=image_path),
             source_url=url_for("serve_image", filename=image_path),
-            keywords=keyword_objects
+            keywords=keyword_objects,
+            status="pending"
         )
         db.session.add(new_post)
         db.session.commit()
@@ -410,7 +437,6 @@ def suspend_image():
     return jsonify({"message": "Post suspended"}), 201
 
 @app.route("/api/blacklist/suspended", methods=['GET'])
-@require_auth
 @require_admin
 def list_suspended():
     images = BlacklistedImage.query.filter_by(status="suspended"
@@ -433,7 +459,6 @@ def list_suspended():
     ])
 
 @app.route("/api/blacklist/blocked", methods=['GET'])
-@require_auth
 @require_admin
 def list_blocked():    
     images = BlacklistedImage.query.filter_by(
@@ -456,7 +481,6 @@ def list_blocked():
     ])
 
 @app.route("/api/blacklist/block/<int:image_id>", methods=['PATCH'])
-@require_auth
 @require_admin
 def block_image(image_id):
     img = BlacklistedImage.query.get_or_404(image_id)
@@ -466,7 +490,6 @@ def block_image(image_id):
     return jsonify({"message": "Image blocked"})
 
 @app.route("/api/blacklist/<int:image_id>", methods=['DELETE'])
-@require_auth
 @require_admin
 def remove_from_blacklist(image_id):
     img = BlacklistedImage.query.get_or_404(image_id)

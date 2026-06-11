@@ -29,7 +29,8 @@ def build_posts_array(posts):
             "keywords": [kw.name for kw in post.keywords],
             "image_url": post.image_url,
             "source_url": post.source_url,
-            "provider": post.provider
+            "provider": post.provider,
+            "status": post.status
         })
     return results
 
